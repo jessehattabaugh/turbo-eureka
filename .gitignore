@@ -1,2 +1,5 @@
 node_modules
 dist
+
+# Generated routes file
+www/scripts/routes.json

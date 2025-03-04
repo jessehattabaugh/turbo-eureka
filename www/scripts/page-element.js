@@ -1,5 +1,5 @@
 // Page element class for easier component creation
-class PageElement extends HTMLElement {
+export class PageElement extends HTMLElement {
 	constructor() {
 		super();
 		this.attachShadow({ mode: 'open' });
@@ -40,6 +40,3 @@ class PageElement extends HTMLElement {
 		// To be overridden by child classes
 	}
 }
-
-// Export the page element for use in other components
-export { PageElement };
