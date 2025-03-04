@@ -1,7 +1,7 @@
-import { BaseComponent } from '../components.js';
+import { PageElement } from '../page-element.js';
 
 // Home page component
-class HomePage extends BaseComponent {
+export default class HomeElement extends PageElement {
 	styles() {
 		return `
       :host {
@@ -27,5 +27,5 @@ class HomePage extends BaseComponent {
 	}
 }
 
-// Register the component
-customElements.define('home-page', HomePage);
+// NOTE: No customElements.define here - the router will handle this
+

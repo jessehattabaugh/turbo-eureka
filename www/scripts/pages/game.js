@@ -1,7 +1,7 @@
-import { BaseComponent } from '../components.js';
+import { PageElement } from '../page-element.js';
 
 // Game page component
-class GamePage extends BaseComponent {
+export default class GameElement extends PageElement {
 	styles() {
 		return `
       :host {
@@ -43,5 +43,5 @@ class GamePage extends BaseComponent {
 	}
 }
 
-// Register the component
-customElements.define('game-page', GamePage);
+// NOTE: No customElements.define here - the router will handle this
+

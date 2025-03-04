@@ -1,2 +1,4 @@
 // put JavaScript that depends on DOM here
-console.debug('deferred script loaded');
+
+// Import router which will handle page loading
+import './router.js';

@@ -1,10 +1,10 @@
-// Import BaseComponent
-import './components.js';
+// Import PageElement base class
+import './page-element.js';
 
-// Import all page components
-import './pages/HomePage.js';
-import './pages/AboutPage.js';
-import './pages/GamePage.js';
+// Import router which will handle page loading and element registration
+import { router } from './router.js';
 
-// Import router
-import './router.js';
+// Export the router for potential use elsewhere
+export { router };
+
+// No preloading - pages will load on demand only

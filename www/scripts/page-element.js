@@ -1,5 +1,5 @@
-// Base component class for easier component creation
-class BaseComponent extends HTMLElement {
+// Page element class for easier component creation
+class PageElement extends HTMLElement {
 	constructor() {
 		super();
 		this.attachShadow({ mode: 'open' });
@@ -24,7 +24,7 @@ class BaseComponent extends HTMLElement {
 	}
 
 	template() {
-		return '<div>Base component</div>';
+		return '<div>Page element</div>';
 	}
 
 	setupEventListeners() {
@@ -32,8 +32,5 @@ class BaseComponent extends HTMLElement {
 	}
 }
 
-// Export the base component for use in other components
-export { BaseComponent };
-
-// Remove the circular imports
-// DO NOT import page components here
+// Export the page element for use in other components
+export { PageElement };

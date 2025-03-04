@@ -1,7 +1,7 @@
-import { BaseComponent } from '../components.js';
+import { PageElement } from '../page-element.js';
 
 // About page component
-class AboutPage extends BaseComponent {
+export default class AboutElement extends PageElement {
 	styles() {
 		return `
       :host {
@@ -20,5 +20,5 @@ class AboutPage extends BaseComponent {
 	}
 }
 
-// Register the component
-customElements.define('about-page', AboutPage);
+// NOTE: No customElements.define here - the router will handle this
+
