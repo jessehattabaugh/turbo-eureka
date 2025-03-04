@@ -3,8 +3,6 @@ class Router {
 	constructor() {
 		this.routes = new Map();
 		this.defaultRoute = null;
-		// Fix the path to use a relative path instead of absolute
-		this.pageDirectory = './scripts/pages/';
 		this.pageLoaded = new Map();
 		this.elementRegistered = new Map();
 
@@ -30,7 +28,9 @@ class Router {
 
 		for (const page of knownPages) {
 			// Skip home as it's already registered as default
-			if (page === 'home') {continue;}
+			if (page === 'home') {
+				continue;
+			}
 
 			// Register each page with its path
 			this.register(`/${page}`, page);
@@ -71,14 +71,11 @@ class Router {
 				// Show loading indicator
 				container.innerHTML = '<div class="loading">Loading...</div>';
 
-				// Lazy load the page module - use the document base URL to ensure correct path resolution
-				const baseUrl = new URL('.', document.baseURI).href;
-				const modulePath = `${baseUrl}${this.pageDirectory.replace('./', '')}${pageName}.js`;
+				// For Parcel, we use dynamic import with a relative path
+				const modulePath = `../pages/${pageName}.js`;
 				console.log(`Loading module from: ${modulePath}`);
-
-					// Load page module and register custom element
+				// Define the component name
 				const componentName = `${pageName}-element`;
-
 				// Only import if not already loaded
 				if (!this.pageLoaded.has(pageName)) {
 					// Import the module
@@ -92,14 +89,14 @@ class Router {
 						console.log(`Registered custom element: ${componentName}`);
 					}
 				}
-
-				// Clear loading indicator and create element
 				container.innerHTML = '';
 				const element = document.createElement(componentName);
 				container.appendChild(element);
 
 				// Update document title
-				document.title = `TurboEureka - ${pageName.charAt(0).toUpperCase() + pageName.slice(1)}`;
+				document.title = `TurboEureka - ${
+					pageName.charAt(0).toUpperCase() + pageName.slice(1)
+				}`;
 			} catch (error) {
 				console.error(`Error loading page module ${pageName}:`, error);
 				container.innerHTML = `<h2>Error</h2><p>Failed to load the requested page: ${error.message}</p>`;

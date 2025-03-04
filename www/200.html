@@ -9,31 +9,91 @@
 	<meta name="description" content="Building a game with AI" />
 	<meta name="theme-color" content="#000000" />
 
-	<link rel="stylesheet" href="styles/all.css" />
+	<link rel="stylesheet" href="styles/index.css" />
 	<link rel="stylesheet" media="prefers-color-scheme: light" href="styles/light.css" />
 	<link rel="stylesheet" media="min-width: 800px" href="styles/wide.css" />
 	<link rel="icon" href="favicon.ico" />
-	<!-- Add back the main script -->
-	<script src="scripts/index.js" type="module"></script>
-	<script src="scripts/async.js" type="module"></script>
-	<script src="scripts/defer.js" type="module" defer></script>
+
+	<!-- Add noscript styles -->
+	<noscript>
+		<style>
+			.js-required {
+				display: none;
+			}
+		</style>
+	</noscript>
+
+	<style>
+		.loading {
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			padding: 2rem;
+			gap: 1rem;
+		}
+
+		.loading::after {
+			content: "";
+			width: 20px;
+			height: 20px;
+			border: 3px solid #ddd;
+			border-top: 3px solid #333;
+			border-radius: 50%;
+			animation: spin 1s linear infinite;
+		}
+
+		@keyframes spin {
+			0% { transform: rotate(0deg); }
+			100% { transform: rotate(360deg); }
+		}
+
+		.no-js-message {
+			background-color: #f8d7da;
+			color: #721c24;
+			padding: 1rem;
+			margin: 1rem 0;
+			border-radius: 4px;
+			display: none;
+		}
+
+		noscript .no-js-message {
+			display: block;
+		}
+	</style>
 </head>
 
 <body>
 	<header>
 		<h1>TurboEureka</h1>
 		<nav>
-			<a href="/" is="router-link">Home</a>
-			<a href="/about" is="router-link">About</a>
-			<a href="/game" is="router-link">Game</a>
+			<a href="/" is="router-link" class="js-required">Home</a>
+			<a href="/about" is="router-link" class="js-required">About</a>
+			<a href="/game" is="router-link" class="js-required">Game</a>
+			<!-- Fallback navigation for no-JS users -->
+			<noscript>
+				<a href="/">Home</a>
+				<a href="/static/about.html">About</a>
+				<a href="/static/game.html">Game</a>
+			</noscript>
 		</nav>
 	</header>
 	<main id="page-container">
-		<!-- Content will be loaded here by the router -->
+		<!-- Initial loading state -->
+		<div class="loading">Loading content...</div>
+
+		<!-- No JavaScript warning -->
+		<noscript>
+			<div class="no-js-message">
+				<h2>JavaScript Required</h2>
+				<p>This application requires JavaScript to function properly. Please enable JavaScript in your browser settings and reload the page.</p>
+				<p>If you cannot enable JavaScript, you can view <a href="/static/home.html">static versions</a> of our content.</p>
+			</div>
+		</noscript>
 	</main>
 	<footer>
 		<small>&copy; 2025</small>
 	</footer>
+	<script src="scripts/index.js" type="module"></script>
 </body>
 
 </html>

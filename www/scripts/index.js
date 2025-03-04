@@ -1,10 +1,13 @@
 // Import PageElement base class
-import './page-element.js';
+import { PageElement } from './page-element.js';
 
-// Import router which will handle page loading and element registration
+// Import router which will handle page loading
 import { router } from './router.js';
 
-// Export the router for potential use elsewhere
-export { router };
+// Initialize the app
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('App initialized');
+});
 
-// No preloading - pages will load on demand only
+// Export important modules
+export { router, PageElement };
