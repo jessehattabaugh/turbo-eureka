@@ -134,14 +134,28 @@ class Router {
 	}
 
 	// Show error state
-	showError() {
-		if (this.pageContainer) {
-			this.pageContainer.innerHTML = `
-        <div class="error">
-          <h2>Oops! Something went wrong</h2>
-          <p>We couldn't load the requested page. Please try again or go back to <a href="/" is="router-link">home</a>.</p>
-        </div>
-      `;
+	async showError() {
+		try {
+			// Import the error page component
+			const module = await import('./pages/error.js');
+			const ErrorPage = module.default;
+
+			// Render the error page
+			this.renderPage(ErrorPage);
+
+			// Update the title
+			document.title = `Error | ${this.pageTitle.split('|')[1] || this.pageTitle}`;
+		} catch (err) {
+			// Fallback if error page can't be loaded
+			if (this.pageContainer) {
+				this.pageContainer.innerHTML = `
+					<div class="error">
+						<h2>Oops! Something went wrong</h2>
+						<p>We couldn't load the requested page. Please try again.</p>
+					</div>
+				`;
+			}
+			console.error('Failed to load error page:', err);
 		}
 	}
 
