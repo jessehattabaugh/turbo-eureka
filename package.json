@@ -4,12 +4,16 @@
 		"@eslint/eslintrc": "latest",
 		"@eslint/js": "latest",
 		"eslint": "latest",
-		"globals": "latest"
+		"globals": "latest",
+		"parcel": "latest"
 	},
 	"scripts": {
 		"kill": "npx kill-port 3000",
-		"start": "npx serve ./public",
-		"test": "npx cowsay no tests... yet!"
+		"start": "npm run dev",
+		"test": "npx cowsay no tests... yet!",
+		"dev": "parcel serve ./www/*.html --dist-dir ./dist --port 3000",
+		"build:staging": "parcel build ./www/*.html --dist-dir ./dist --public-url './' --no-optimize",
+		"build:prod": "parcel build ./www/*.html --dist-dir ./dist --public-url './'"
 	},
 	"type": "module"
 }
