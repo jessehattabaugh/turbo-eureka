@@ -5,7 +5,12 @@
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
 	<title>TurboEureka</title>
-
+	<link rel="stylesheet" href="styles/all.css" />
+	<link rel="stylesheet" media="prefers-color-scheme: light" href="styles/light.css" />
+	<link rel="stylesheet" media="min-width: 800px" href="styles/wide.css" />
+	<link rel="icon" href="favicon.ico" />
+	<script src="scripts/async.js" type="module"></script>
+	<script src="scripts/defer.js" type="module" defer></script>
 </head>
 
 <body>
@@ -14,6 +19,10 @@
 	</header>
 	<main>
 		<h2>building a game with AI</h2>
+		<picture>
+			<source srcset="icon/512.png" media="(min-width: 512px)" />
+			<img src="icon/192.png" alt="TurboEureka logo" />
+		</picture>
 	</main>
 	<footer>
 		<small>&copy; 2025</small>

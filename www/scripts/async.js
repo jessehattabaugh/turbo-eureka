@@ -4,8 +4,8 @@
 if ('serviceWorker' in navigator) {
 	window.addEventListener('load', async () => {
 		try {
-			await navigator.serviceWorker.register('/scripts/sw.js', {
-				scope: '/',
+			await navigator.serviceWorker.register(new URL('../sw.js', import.meta.url), {
+				scope: './',
 			});
 			console.debug('👨‍🏭® service worker registered');
 		} catch (exception) {
