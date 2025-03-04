@@ -9,15 +9,13 @@
 		"surge": "latest"
 	},
 	"scripts": {
-		"build:prod": "npm run generate-routes && parcel build ./www/*.html --dist-dir ./dist --public-url './'",
-		"build:staging": "npm run generate-routes && parcel build ./www/*.html --dist-dir ./dist --public-url './' --no-optimize",
+		"build:prod": "parcel build ./www/*.html --dist-dir ./dist --public-url './'",
+		"build:staging": "parcel build ./www/*.html --dist-dir ./dist --public-url './' --no-optimize",
 		"deploy:prod": "npm run build:prod && surge ./dist --domain turbo-eureka.surge.sh",
 		"deploy:staging": "npm run build:staging && surge ./dist --domain staging-turbo-eureka.surge.sh",
-		"dev": "npm run generate-routes && parcel serve ./www/*.html --port 3000",
-		"generate-routes": "node scripts/generate-routes.js",
+		"dev": "parcel serve ./www/*.html --port 3000",
 		"kill": "npx kill-port 3000",
-		"start": "npm run generate-routes && npm run dev",
-		"test": "npx cowsay no tests... yet!"
+		"start": "npm run dev"
 	},
 	"type": "module"
 }
