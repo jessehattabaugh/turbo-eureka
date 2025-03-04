@@ -99,13 +99,14 @@ class Router {
 				}`;
 			} catch (error) {
 				console.error(`Error loading page module ${pageName}:`, error);
-				container.innerHTML = `<h2>Error</h2><p>Failed to load the requested page: ${error.message}</p>`;
+				// Redirect to 404.html on error
+				window.location.href = '/404.html';
+				return;
 			}
 		} else {
-			// Create a 404 page if no route is found
-			container.innerHTML =
-				'<h2>Page Not Found</h2><p>The requested page could not be found.</p>';
-			document.title = 'TurboEureka - Page Not Found';
+			// Redirect to 404.html if no route is found
+			window.location.href = '/404.html';
+			return;
 		}
 	}
 }
