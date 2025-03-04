@@ -1,5 +1,8 @@
 import { PageElement } from '../page-element.js';
 
+// Export the page name for the title
+export const pageName = "Play Game";
+
 // Game page component
 export default class GameElement extends PageElement {
 	styles() {

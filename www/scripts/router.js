@@ -76,11 +76,13 @@ class Router {
 				console.log(`Loading module from: ${modulePath}`);
 				// Define the component name
 				const componentName = `${pageName}-element`;
-				// Only import if not already loaded
+
+				// Import the module if not already loaded
+				let pageModule;
 				if (!this.pageLoaded.has(pageName)) {
 					// Import the module
-					const pageModule = await import(modulePath);
-					this.pageLoaded.set(pageName, true);
+					pageModule = await import(modulePath);
+					this.pageLoaded.set(pageName, pageModule);
 
 					// Register the custom element only when first needed
 					if (!this.elementRegistered.has(componentName) && pageModule.default) {
@@ -88,15 +90,23 @@ class Router {
 						this.elementRegistered.set(componentName, true);
 						console.log(`Registered custom element: ${componentName}`);
 					}
+				} else {
+					pageModule = this.pageLoaded.get(pageName);
 				}
+
 				container.innerHTML = '';
 				const element = document.createElement(componentName);
 				container.appendChild(element);
 
-				// Update document title
-				document.title = `TurboEureka - ${
-					pageName.charAt(0).toUpperCase() + pageName.slice(1)
-				}`;
+				// Update document title using the exported pageName property if available
+				if (pageModule && pageModule.pageName) {
+					document.title = `TurboEureka - ${pageModule.pageName}`;
+				} else {
+					// Fallback to generated title
+					document.title = `TurboEureka - ${
+						pageName.charAt(0).toUpperCase() + pageName.slice(1)
+					}`;
+				}
 			} catch (error) {
 				console.error(`Error loading page module ${pageName}:`, error);
 				// Redirect to 404.html on error
