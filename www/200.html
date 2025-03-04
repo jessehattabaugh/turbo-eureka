@@ -43,8 +43,13 @@
 		}
 
 		@keyframes spin {
-			0% { transform: rotate(0deg); }
-			100% { transform: rotate(360deg); }
+			0% {
+				transform: rotate(0deg);
+			}
+
+			100% {
+				transform: rotate(360deg);
+			}
 		}
 
 		.no-js-message {
@@ -60,6 +65,9 @@
 			display: block;
 		}
 	</style>
+
+	<!-- Meta tag for View Transitions API -->
+	<meta name="view-transition" content="same-origin" />
 </head>
 
 <body>
@@ -69,12 +77,6 @@
 			<a href="/" is="router-link" class="js-required">Home</a>
 			<a href="/about" is="router-link" class="js-required">About</a>
 			<a href="/game" is="router-link" class="js-required">Game</a>
-			<!-- Fallback navigation for no-JS users -->
-			<noscript>
-				<a href="/">Home</a>
-				<a href="/static/about.html">About</a>
-				<a href="/static/game.html">Game</a>
-			</noscript>
 		</nav>
 	</header>
 	<main id="page-container">
@@ -85,8 +87,8 @@
 		<noscript>
 			<div class="no-js-message">
 				<h2>JavaScript Required</h2>
-				<p>This application requires JavaScript to function properly. Please enable JavaScript in your browser settings and reload the page.</p>
-				<p>If you cannot enable JavaScript, you can view <a href="/static/home.html">static versions</a> of our content.</p>
+				<p>This application requires JavaScript to function properly. Please enable JavaScript in your browser
+					settings and reload the page.</p>
 			</div>
 		</noscript>
 	</main>

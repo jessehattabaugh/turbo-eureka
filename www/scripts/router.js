@@ -1,143 +1,120 @@
-// Router class to manage page navigation
+// Router for handling page transitions
+
 class Router {
 	constructor() {
 		this.routes = new Map();
-		this.defaultRoute = null;
-		this.pageLoaded = new Map();
-		this.elementRegistered = new Map();
-
-		// Handle popstate events (browser back/forward)
-		window.addEventListener('popstate', () => {
-			return this.navigate(window.location.pathname);
-		});
-
-		// Initial navigation
-		document.addEventListener('DOMContentLoaded', () => {
-			this.registerPagesFromDirectory();
-			this.navigate(window.location.pathname);
-		});
+		this.pageContainer = null;
+		this.currentPage = null;
+		this.defaultTitle = 'TurboEureka';
 	}
 
-	// Register pages from the directory structure
-	async registerPagesFromDirectory() {
-		// Default home page
-		this.register('/', 'home', true);
+	init(pageContainer) {
+		this.pageContainer = pageContainer;
+		window.addEventListener('popstate', this.handlePopState.bind(this));
 
-		// Simple list of known pages - this could be dynamically fetched in a real app
-		const knownPages = ['home', 'about', 'game'];
+		// Handle initial route on page load
+		this.navigate(window.location.pathname, false);
 
-		for (const page of knownPages) {
-			// Skip home as it's already registered as default
-			if (page === 'home') {
-				continue;
-			}
-
-			// Register each page with its path
-			this.register(`/${page}`, page);
-		}
+		console.log('Router initialized');
 	}
 
-	// Register a route with a component
-	register(path, pageName, isDefault = false) {
-		this.routes.set(path, pageName);
-		if (isDefault) {
-			this.defaultRoute = path;
-		}
-		return this;
+	async registerRoute(path, moduleImport) {
+		this.routes.set(path, moduleImport);
 	}
 
-	// Navigate to a specific path with lazy loading
-	async navigate(path) {
-		const container = document.getElementById('page-container');
-		if (!container) {
-			return;
+	async handlePopState() {
+		await this.navigate(window.location.pathname, false);
+	}
+
+	async navigate(path, addToHistory = true) {
+		// Default to home page if path is /
+		if (path === '/') {
+			path = '/home';
 		}
 
-		// Clear current content
-		container.innerHTML = '';
+		try {
+			// Check if we support view transitions
+			const supportsViewTransition = !!document.startViewTransition;
 
-		// Find the page name for this route
-		let pageName = this.routes.get(path);
-
-		// Use default route if no match found
-		if (!pageName && this.defaultRoute) {
-			path = this.defaultRoute;
-			pageName = this.routes.get(this.defaultRoute);
-		}
-
-		// Create the component if found
-		if (pageName) {
+			let pageModule;
 			try {
-				// Show loading indicator
-				container.innerHTML = '<div class="loading">Loading...</div>';
-
-				// For Parcel, we use dynamic import with a relative path
-				const modulePath = `../pages/${pageName}.js`;
-				console.log(`Loading module from: ${modulePath}`);
-				// Define the component name
-				const componentName = `${pageName}-element`;
-
-				// Import the module if not already loaded
-				let pageModule;
-				if (!this.pageLoaded.has(pageName)) {
-					// Import the module
-					pageModule = await import(modulePath);
-					this.pageLoaded.set(pageName, pageModule);
-
-					// Register the custom element only when first needed
-					if (!this.elementRegistered.has(componentName) && pageModule.default) {
-						customElements.define(componentName, pageModule.default);
-						this.elementRegistered.set(componentName, true);
-						console.log(`Registered custom element: ${componentName}`);
-					}
+				// Try to load the requested page
+				pageModule = await this.routes.get(path)();
+			} catch (e) {
+				console.error(`Error loading module for path ${path}:`, e);
+				// If module fails to load, try the 404 page
+				if (path !== '/404') {
+					return this.navigate('/404');
 				} else {
-					pageModule = this.pageLoaded.get(pageName);
+					throw new Error('Failed to load 404 page');
 				}
-
-				container.innerHTML = '';
-				const element = document.createElement(componentName);
-				container.appendChild(element);
-
-				// Update document title using the exported pageName property if available
-				if (pageModule && pageModule.pageName) {
-					document.title = `TurboEureka - ${pageModule.pageName}`;
-				} else {
-					// Fallback to generated title
-					document.title = `TurboEureka - ${
-						pageName.charAt(0).toUpperCase() + pageName.slice(1)
-					}`;
-				}
-			} catch (error) {
-				console.error(`Error loading page module ${pageName}:`, error);
-				// Redirect to 404.html on error
-				window.location.href = '/404.html';
-				return;
 			}
-		} else {
-			// Redirect to 404.html if no route is found
-			window.location.href = '/404.html';
-			return;
+
+			const updateDOM = async () => {
+				// Clear current content
+				while (this.pageContainer.firstChild) {
+					this.pageContainer.firstChild.remove();
+				}
+
+				// Create and append the new page element
+				const PageClass = pageModule.default;
+				const newPage = new PageClass();
+				this.pageContainer.appendChild(newPage);
+
+				// Update document title
+				document.title = pageModule.pageName
+					? `${pageModule.pageName} | ${this.defaultTitle}`
+					: this.defaultTitle;
+
+				// Update current page reference
+				this.currentPage = newPage;
+
+				// Add to browser history if needed
+				if (addToHistory) {
+					window.history.pushState({}, '', path);
+				}
+			};
+
+			// Use view transitions if supported
+			if (supportsViewTransition) {
+				await document.startViewTransition(() => {
+					return updateDOM();
+				});
+			} else {
+				await updateDOM();
+			}
+		} catch (e) {
+			console.error('Navigation error:', e);
 		}
 	}
 }
 
-// Create a global router instance
-const router = new Router();
+// Create and export router instance
+export const router = new Router();
 
-// Custom router-link element that prevents default navigation
+// Define custom RouterLink element that uses the router for navigation
 class RouterLink extends HTMLAnchorElement {
-	connectedCallback() {
-		this.addEventListener('click', (e) => {
-			e.preventDefault();
+	constructor() {
+		super();
+	}
 
-			const href = this.getAttribute('href');
-			window.history.pushState(null, '', href);
-			router.navigate(href);
-		});
+	connectedCallback() {
+		this.addEventListener('click', this.navigate);
+	}
+
+	disconnectedCallback() {
+		this.removeEventListener('click', this.navigate);
+	}
+
+	navigate(event) {
+		// Prevent default anchor behavior
+		event.preventDefault();
+
+		// Get the href attribute and navigate using the router
+		const href = this.getAttribute('href');
+		router.navigate(href);
 	}
 }
 
-// Register custom elements
+// Register the custom element
 customElements.define('router-link', RouterLink, { extends: 'a' });
-
-export { router };

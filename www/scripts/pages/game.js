@@ -46,5 +46,4 @@ export default class GameElement extends PageElement {
 	}
 }
 
-// NOTE: No customElements.define here - the router will handle this
 

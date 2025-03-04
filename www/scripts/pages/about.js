@@ -1,7 +1,7 @@
 import { PageElement } from '../page-element.js';
 
 // Export the page name for the title
-export const pageName = "About Us";
+export const pageName = 'About Us';
 
 // About page component
 export default class AboutElement extends PageElement {
@@ -22,6 +22,3 @@ export default class AboutElement extends PageElement {
     `;
 	}
 }
-
-// NOTE: No customElements.define here - the router will handle this
-
