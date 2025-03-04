@@ -5,7 +5,8 @@
 		"@eslint/js": "latest",
 		"eslint": "latest",
 		"globals": "latest",
-		"parcel": "latest"
+		"parcel": "latest",
+		"surge": "latest"
 	},
 	"scripts": {
 		"kill": "npx kill-port 3000",
@@ -13,7 +14,9 @@
 		"test": "npx cowsay no tests... yet!",
 		"dev": "parcel serve ./www/*.html --dist-dir ./dist --port 3000",
 		"build:staging": "parcel build ./www/*.html --dist-dir ./dist --public-url './' --no-optimize",
-		"build:prod": "parcel build ./www/*.html --dist-dir ./dist --public-url './'"
+		"build:prod": "parcel build ./www/*.html --dist-dir ./dist --public-url './'",
+		"deploy:staging": "npm run build:staging && surge ./dist --domain staging-turbo-eureka.surge.sh",
+		"deploy:prod": "npm run build:prod && surge ./dist --domain turbo-eureka.surge.sh"
 	},
 	"type": "module"
 }
