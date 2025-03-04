@@ -1,6 +1,6 @@
-# {{ repository.name }}
+# TurboEureka
 
-{{ repository.description }}
+building a game with ai
 
 ## Getting Started
 
