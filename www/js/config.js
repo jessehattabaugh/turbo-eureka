@@ -7,7 +7,7 @@ export const config = {
     gravity: { x: 0, y: 1, scale: 0.001 },
     friction: 0.1,
     restitution: 0.7,
-    enableSleeping: true,
+    enableSleeping: false, // Changed to false to keep bodies active
     pixelRatio: window.devicePixelRatio || 1,
   },
 

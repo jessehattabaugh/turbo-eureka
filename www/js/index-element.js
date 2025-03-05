@@ -194,6 +194,7 @@ export class IndexElement extends HTMLElement {
 				const bodyToDestroy = this.physics.getBodyAtPoint(point);
 				if (bodyToDestroy) {
 					this.physics.destroyBody(bodyToDestroy);
+					this.updateStats(); // Update stats immediately
 				}
 				break;
 			}
@@ -232,6 +233,14 @@ export class IndexElement extends HTMLElement {
 			const body = this.physics.getBodyAtPoint(point);
 			if (!body) {
 				this.spawnObjectAtPoint(point);
+			}
+		} else if (this.currentTool === 'destroy') {
+			// Continuously destroy bodies when destroy tool is active and moving
+			const bodyToDestroy = this.physics.getBodyAtPoint(point);
+			if (bodyToDestroy) {
+				this.physics.destroyBody(bodyToDestroy);
+				this.updateStats(); // Update stats immediately
+				e.preventDefault();
 			}
 		}
 	}
