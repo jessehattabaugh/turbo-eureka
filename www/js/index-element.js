@@ -1,6 +1,9 @@
 import { PhysicsEngine } from './physics-engine.js';
 import { config } from './config.js';
-import './tool-dock.js'; // Import the tool dock component
+import {ToolDock} from './tool-dock.js'; // Import the tool dock component
+
+// Register the custom element
+customElements.define('tool-dock', ToolDock);
 
 export class IndexElement extends HTMLElement {
 	constructor() {
@@ -102,7 +105,7 @@ export class IndexElement extends HTMLElement {
 			// Initialize physics engine
 		this.physics = new PhysicsEngine(container, canvas);
 		this.physics.init().createBodies();
-		this.physics.on('afterUpdate', () => this.updateStats());
+		this.physics.on('afterUpdate', () => {return this.updateStats()});
 	}
 
 	/**

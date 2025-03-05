@@ -132,46 +132,56 @@ export class ToolDock extends HTMLElement {
 
 	setupEventListeners() {
 		// Tool button clicks
-		this.shadowRoot.querySelectorAll('.tool-button').forEach(button => {
-			button.addEventListener('click', () => this.setTool(button.dataset.tool));
+		this.shadowRoot.querySelectorAll('.tool-button').forEach((button) => {
+			button.addEventListener('click', () => {
+				return this.setTool(button.dataset.tool);
+			});
 		});
 
 		// Keyboard shortcuts
-		window.addEventListener('keydown', this.handleKeydown = e => {
-			if (document.activeElement.tagName !== 'INPUT' && 
-				document.activeElement.tagName !== 'TEXTAREA') {
-				const toolMap = {
-					's': 'spawn',
-					'd': 'destroy',
-					'c': 'circle',
-					'b': 'box',
-					'p': 'polygon',
-					'l': 'line'
-				};
-				
-				const tool = toolMap[e.key.toLowerCase()];
-				if (tool) this.setTool(tool);
-			}
-		});
+		window.addEventListener(
+			'keydown',
+			(this.handleKeydown = (e) => {
+				if (
+					document.activeElement.tagName !== 'INPUT' &&
+					document.activeElement.tagName !== 'TEXTAREA'
+				) {
+					const toolMap = {
+						s: 'spawn',
+						d: 'destroy',
+						c: 'circle',
+						b: 'box',
+						p: 'polygon',
+						l: 'line',
+					};
+
+					const tool = toolMap[e.key.toLowerCase()];
+					if (tool) {
+						this.setTool(tool);
+					}
+				}
+			}),
+		);
 	}
 
 	setTool(toolName) {
-		if (this.currentTool === toolName) return;
+		if (this.currentTool === toolName) {
+			return;
+		}
 
 		// Update active button state
 		const buttons = this.shadowRoot.querySelectorAll('.tool-button');
-		buttons.forEach(button => {
+		buttons.forEach((button) => {
 			button.classList.toggle('active', button.dataset.tool === toolName);
 		});
 
 		this.currentTool = toolName;
-		if (this._onToolChange) this._onToolChange(toolName);
+		if (this._onToolChange) {
+			this._onToolChange(toolName);
+		}
 	}
 
 	disconnectedCallback() {
 		window.removeEventListener('keydown', this.handleKeydown);
 	}
 }
-
-// Register the custom element
-customElements.define('tool-dock', ToolDock);
