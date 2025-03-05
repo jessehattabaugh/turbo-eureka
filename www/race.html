@@ -5,7 +5,7 @@
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
 
-	<title>TurboEureka</title>
+	<title>TurboEureka - Race</title>
 	<meta name="theme-color" content="#000000" />
 
 	<link rel="stylesheet" href="styles/index.css" />
@@ -18,23 +18,29 @@
 	<header>
 		<h1>TurboEureka!</h1>
 		<nav>
-			<a href="index.html" class="active">Welcome</a>
+			<a href="index.html">Welcome</a>
 			<a href="kart.html">Kart</a>
 			<a href="track.html">Track</a>
 			<a href="sky.html">Sky</a>
 			<a href="obstacle.html">Obstacle</a>
 			<a href="sprite.html">Sprite</a>
-			<a href="race.html">Race</a>
+			<a href="race.html" class="active">Race</a>
 		</nav>
 	</header>
 
-	<h2>Welcome!</h2>
+<p>a race is a collection of karts, a track, a sky, and obstacles. the sky is a collection of images. the obstacles are positioned on the track. the karts are positioned on the track. the track is a collection of segments. a segment is a collection of points. a point is an x and y coordinate
 
-	<p>Ready to race!? Choose a kart to get started!</p>
+<te-race>
+	<te-kart></te-kart>
+	<te-track></te-track>
+	<te-sky>
+		<img src="images/sky.jpg" alt="Sky" />
+		<img src="images/sky.jpg" alt="Sky" />
+		<img src="images/sky.jpg" alt="Sky" />
+	</te-sky>
+	<te-obstacle></te-obstacle>
+</te-race>
 
-	<button>Choose a Kart!</button>
 
-	<script src="scripts/index.js" type="module"></script>
 </body>
-
 </html>

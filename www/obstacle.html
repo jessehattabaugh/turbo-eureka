@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+	<title>TurboEureka - Obstacle</title>
+	<meta name="theme-color" content="#000000" />
+
+	<link rel="stylesheet" href="styles/index.css" />
+	<link rel="stylesheet" media="prefers-color-scheme: light" href="styles/light.css" />
+	<link rel="stylesheet" media="min-width: 800px" href="styles/wide.css" />
+	<link rel="icon" href="favicon.ico" />
+</head>
+
+<body>
+	<header>
+		<h1>TurboEureka!</h1>
+		<nav>
+			<a href="index.html">Welcome</a>
+			<a href="kart.html">Kart</a>
+			<a href="track.html">Track</a>
+			<a href="sky.html">Sky</a>
+			<a href="obstacle.html" class="active">Obstacle</a>
+			<a href="sprite.html">Sprite</a>
+			<a href="race.html">Race</a>
+		</nav>
+	</header>
+
+	<h1>Obstacle</h1>
+
+	<p>Obstacle is an object like an image or a canvas which is skewed rotated and translated to give the appearance that the obstacle is moving around the player in 3D space as they move around the track. Obstacles are represented as Matter.js physics Bodies, and as such can be collided with. Obstacles can be placed manually using attributes. </p>
+
+	<h2><te-obstacle></te-obstacle></h2>
+
+	<p>This component wraps an array of images that will be scattered around the track for the player to avoid. Components that don't have a position will be repeated some default number of time. The repetitions will be configurable with an attribute.</p>
+
+
+
+</body>
+</html>

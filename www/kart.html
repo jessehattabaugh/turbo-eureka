@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+	<title>TurboEureka - Kart</title>
+	<meta name="theme-color" content="#000000" />
+
+	<link rel="stylesheet" href="styles/index.css" />
+	<link rel="stylesheet" media="prefers-color-scheme: light" href="styles/light.css" />
+	<link rel="stylesheet" media="min-width: 800px" href="styles/wide.css" />
+	<link rel="icon" href="favicon.ico" />
+</head>
+
+<body>
+	<header>
+		<h1>TurboEureka!</h1>
+		<nav>
+			<a href="index.html">Welcome</a>
+			<a href="kart.html" class="active">Kart</a>
+			<a href="track.html">Track</a>
+			<a href="sky.html">Sky</a>
+			<a href="obstacle.html">Obstacle</a>
+			<a href="sprite.html">Sprite</a>
+			<a href="race.html">Race</a>
+		</nav>
+	</header>
+
+	<h1>Kart</h1>
+
+	<p>A kart is a type of Sprite that represents a player's position on the track. The player's sprite is usually seen from behind, but can be rotated just like other sprites. There can be many Kart sprites on the track at any given time.</p>
+
+	<te-kart>
+		<img src="images/kart-front.png" />
+		<img src="images/kart-left.png" />
+		<img src="images/kart-back.png" />
+		<img src="images/kart-right.png" />
+	</te-kart>
+
+	<p>Four images are recommended for Karts, but if only one image is provided, it will be used to represent all sides. If two images are provided, the first will represent the front, and the second will represent the back. If three images are provided, the first will represent the front, the second will represent the left/back, and the third will represent the right/back. If four images are provided, the first will represent the front, the second will represent the left, the third will represent the back, and the fourth will represent the right. As more images are added they will be evenly distributed around the rotation of the Kart. </p>
+</body>
+</html>
