@@ -5,6 +5,7 @@
 		"@eslint/js": "latest",
 		"eslint": "latest",
 		"globals": "latest",
+		"matter-js": "latest",
 		"parcel": "latest",
 		"surge": "latest"
 	},
