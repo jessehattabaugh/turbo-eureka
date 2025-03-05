@@ -1,6 +1,6 @@
 import {IndexElement} from './js/index-element.js';
 
-// Register the element
+// Register the web component
 customElements.define('te-index', IndexElement);
 
-console.debug('👋 Hello from www/index.js');
+console.debug('👋 Physics playground initialized');

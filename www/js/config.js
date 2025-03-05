@@ -1,6 +1,5 @@
 /**
  * Configuration settings for the physics simulation
- * Centralized for easy tweaking and performance optimization
  */
 export const config = {
   // Physics settings
@@ -14,9 +13,9 @@ export const config = {
 
   // Performance limits
   limits: {
-    maxBodies: 100,     // Maximum number of bodies in the simulation
-    poolSize: 150,      // Size of the object pool for reuse
-    spawnInterval: 50,  // Minimum interval between spawns in ms
+    maxBodies: 100,     // Maximum bodies
+    poolSize: 150,      // Object pool size
+    spawnInterval: 50,  // Min ms between spawns
   },
 
   // Visual settings
@@ -32,6 +31,15 @@ export const config = {
     minSize: 15,
     maxSize: 50,
     types: ['circle', 'box', 'polygon'],
-    typeWeights: [2, 2, 1],  // More circles and boxes than polygons
+    typeWeights: [2, 2, 1],  // Weighted probabilities
+  },
+
+  // Tool settings
+  tools: {
+    defaultTool: 'spawn',
+    constraints: {
+      maxLineLength: 500,
+      maxShapeSize: 150
+    }
   }
 };

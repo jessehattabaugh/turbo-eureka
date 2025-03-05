@@ -1,32 +1,33 @@
 import { PhysicsEngine } from './physics-engine.js';
 import { config } from './config.js';
+import './tool-dock.js'; // Import the tool dock component
 
 export class IndexElement extends HTMLElement {
 	constructor() {
 		super();
 		this.attachShadow({ mode: 'open' });
 
-		// Initialize physics engine
+			// Physics and tool state
 		this.physics = null;
+		this.currentTool = 'spawn';
 
-		// Initialize interaction state
+		// Drawing state
+		this.isDrawing = false;
+		this.drawStartPoint = null;
+		this.previewCtx = null;
+
+		// Dragging state
 		this.isDragging = false;
 		this.dragBody = null;
 		this.startPoint = { x: 0, y: 0 };
-		this.originalBodyStyle = null;
 		this.lastSpawnTime = 0;
 
-		// Stats for UI
-		this.activeObjects = 0;
-
-		// Initialize observers
-		this.resizeObserver = null;
-
-		// Bind event handlers to maintain context
+		// Bind event handlers
 		this.handlePointerDown = this.handlePointerDown.bind(this);
 		this.handlePointerMove = this.handlePointerMove.bind(this);
 		this.handlePointerUp = this.handlePointerUp.bind(this);
 		this.handlePointerCancel = this.handlePointerCancel.bind(this);
+		this.handleToolChange = this.handleToolChange.bind(this);
 	}
 
 	connectedCallback() {
@@ -71,26 +72,37 @@ export class IndexElement extends HTMLElement {
           font-family: monospace;
           pointer-events: none;
         }
+        #preview-canvas {
+          position: absolute;
+          top: 0;
+          left: 0;
+          pointer-events: none;
+          z-index: 10;
+        }
       </style>
       <div class="canvas-container">
         <canvas id="physics-canvas"></canvas>
+        <canvas id="preview-canvas"></canvas>
         <div class="stats-display">Bodies: 0</div>
       </div>
+      <tool-dock></tool-dock>
     `;
 	}
 
 	initializePhysics() {
 		const container = this.shadowRoot.querySelector('.canvas-container');
 		const canvas = this.shadowRoot.querySelector('#physics-canvas');
+		const previewCanvas = this.shadowRoot.querySelector('#preview-canvas');
 
-		// Create physics engine and initialize it
+		// Set up preview canvas
+		previewCanvas.width = container.clientWidth;
+		previewCanvas.height = container.clientHeight;
+		this.previewCtx = previewCanvas.getContext('2d');
+
+			// Initialize physics engine
 		this.physics = new PhysicsEngine(container, canvas);
 		this.physics.init().createBodies();
-
-		// Register any callbacks if needed
-		this.physics.on('afterUpdate', () => {
-			this.updateStats();
-		});
+		this.physics.on('afterUpdate', () => this.updateStats());
 	}
 
 	/**
@@ -117,8 +129,20 @@ export class IndexElement extends HTMLElement {
 
 		// Prevent context menu on right-click
 		canvas.addEventListener('contextmenu', (e) => {
-			return e.preventDefault();
+			e.preventDefault();
 		});
+
+		// Set up tool dock listener
+		const toolDock = this.shadowRoot.querySelector('tool-dock');
+		toolDock.onToolChange = this.handleToolChange;
+	}
+
+	/**
+	 * Handle tool selection change from the dock
+	 */
+	handleToolChange(tool) {
+		this.currentTool = tool;
+		console.log(`Tool changed to: ${tool}`);
 	}
 
 	removeEventListeners() {
@@ -133,7 +157,7 @@ export class IndexElement extends HTMLElement {
 		canvas.removeEventListener('pointercancel', this.handlePointerCancel);
 		canvas.removeEventListener('pointerleave', this.handlePointerCancel);
 		canvas.removeEventListener('contextmenu', (e) => {
-			return e.preventDefault();
+			e.preventDefault();
 		});
 	}
 
@@ -146,15 +170,39 @@ export class IndexElement extends HTMLElement {
 
 		const point = this.getPointFromEvent(e);
 
-		// Check if we hit an existing body first
-		const body = this.physics.getBodyAtPoint(point);
+		// Handle tool-specific behavior
+		switch (this.currentTool) {
+			case 'spawn':
+				// Check if we hit an existing body first
+				{
+					const body = this.physics.getBodyAtPoint(point);
+					if (body) {
+						// Start dragging existing body
+						this.startDraggingBody(body, point);
+					} else {
+						// Spawn a new object
+						this.spawnObjectAtPoint(point);
+					}
+				}
+				break;
 
-		if (body) {
-			// Start dragging existing body
-			this.startDraggingBody(body, point);
-		} else {
-			// Spawn a new object
-			this.spawnObjectAtPoint(point);
+			case 'destroy': {
+				// Find and destroy body at point
+				const bodyToDestroy = this.physics.getBodyAtPoint(point);
+				if (bodyToDestroy) {
+					this.physics.destroyBody(bodyToDestroy);
+				}
+				break;
+			}
+
+			case 'circle':
+			case 'box':
+			case 'polygon':
+			case 'line':
+				// Start drawing the shape
+				this.isDrawing = true;
+				this.drawStartPoint = point;
+				break;
 		}
 
 		// Prevent default behavior
@@ -172,9 +220,83 @@ export class IndexElement extends HTMLElement {
 			this.moveBodyToPoint(point);
 			// Prevent default behavior like scrolling
 			e.preventDefault();
-		} else if (this.canSpawn()) {
-			// Spawn objects while moving on empty space
-			this.spawnObjectAtPoint(point);
+		} else if (this.isDrawing) {
+			// Update shape preview
+			this.updateShapePreview(point);
+			e.preventDefault();
+		} else if (this.currentTool === 'spawn' && this.canSpawn()) {
+			// Spawn objects while moving on empty space when using the spawn tool
+			const body = this.physics.getBodyAtPoint(point);
+			if (!body) {
+				this.spawnObjectAtPoint(point);
+			}
+		}
+	}
+
+	/**
+	 * Update the preview of the shape being drawn
+	 */
+	updateShapePreview(currentPoint) {
+		if (!this.drawStartPoint || !this.previewCtx) {return;}
+
+		const ctx = this.previewCtx;
+		const previewCanvas = ctx.canvas;
+
+		// Clear previous preview
+		ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+
+		// Get shape preview data
+		const preview = this.physics.createShapePreview(
+			this.currentTool,
+			this.drawStartPoint,
+			currentPoint
+		);
+
+		if (!preview) {return;}
+
+		// Draw preview based on type
+		ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+		ctx.fillStyle = 'rgba(58, 134, 255, 0.5)';
+		ctx.lineWidth = 2;
+
+		switch (preview.type) {
+			case 'circle':
+				ctx.beginPath();
+				ctx.arc(preview.x, preview.y, preview.radius, 0, Math.PI * 2);
+				ctx.fill();
+				ctx.stroke();
+				break;
+
+			case 'box':
+				ctx.beginPath();
+				ctx.rect(preview.x, preview.y, preview.width, preview.height);
+				ctx.fill();
+				ctx.stroke();
+				break;
+
+			case 'polygon':
+				ctx.beginPath();
+				{
+					const { vertices } = preview;
+					if (vertices && vertices.length > 0) {
+						ctx.moveTo(vertices[0].x, vertices[0].y);
+						for (let i = 1; i < vertices.length; i++) {
+							ctx.lineTo(vertices[i].x, vertices[i].y);
+						}
+						ctx.closePath();
+						ctx.fill();
+						ctx.stroke();
+					}
+				}
+				break;
+
+			case 'line':
+				ctx.beginPath();
+				ctx.moveTo(preview.x1, preview.y1);
+				ctx.lineTo(preview.x2, preview.y2);
+				ctx.lineWidth = preview.thickness;
+				ctx.stroke();
+				break;
 		}
 	}
 
@@ -233,8 +355,58 @@ export class IndexElement extends HTMLElement {
 			e.target.releasePointerCapture(e.pointerId);
 		}
 
+		const point = this.getPointFromEvent(e);
+
+		if (this.isDrawing) {
+			// Finish creating the shape
+			this.finishShapeDrawing(point);
+		}
+
 		this.stopDragging();
 		e.preventDefault();
+	}
+
+	/**
+	 * Finish drawing a shape and create the actual physics body
+	 */
+	finishShapeDrawing(endPoint) {
+		if (!this.drawStartPoint) {return;}
+
+		// Clear the preview
+		if (this.previewCtx) {
+			const {canvas} = this.previewCtx;
+			this.previewCtx.clearRect(0, 0, canvas.width, canvas.height);
+		}
+
+		// Calculate minimum distance for shape creation
+		const dx = endPoint.x - this.drawStartPoint.x;
+		const dy = endPoint.y - this.drawStartPoint.y;
+		const distance = Math.sqrt(dx * dx + dy * dy);
+
+		// Only create shapes if they're big enough
+		if (distance >= config.objects.minSize / 2) {
+			switch (this.currentTool) {
+				case 'circle':
+					this.physics.createCircle(this.drawStartPoint, endPoint);
+					break;
+
+				case 'box':
+					this.physics.createBox(this.drawStartPoint, endPoint);
+					break;
+
+				case 'polygon':
+					this.physics.createPolygon(this.drawStartPoint, endPoint);
+					break;
+
+				case 'line':
+					this.physics.createLine(this.drawStartPoint, endPoint);
+					break;
+			}
+		}
+
+		// Reset drawing state
+		this.isDrawing = false;
+		this.drawStartPoint = null;
 	}
 
 	/**
@@ -244,6 +416,14 @@ export class IndexElement extends HTMLElement {
 		// Release the pointer capture
 		if (e.target.hasPointerCapture(e.pointerId)) {
 			e.target.releasePointerCapture(e.pointerId);
+		}
+
+		// Clear any drawing in progress
+		if (this.isDrawing && this.previewCtx) {
+			const {canvas} = this.previewCtx;
+			this.previewCtx.clearRect(0, 0, canvas.width, canvas.height);
+			this.isDrawing = false;
+			this.drawStartPoint = null;
 		}
 
 		this.stopDragging();
@@ -291,6 +471,13 @@ export class IndexElement extends HTMLElement {
 			const { width, height } = entries[0].contentRect;
 			if (this.physics) {
 				this.physics.resize(width, height);
+			}
+
+			// Also resize the preview canvas
+			const previewCanvas = this.shadowRoot.querySelector('#preview-canvas');
+			if (previewCanvas) {
+				previewCanvas.width = width;
+				previewCanvas.height = height;
 			}
 		});
 

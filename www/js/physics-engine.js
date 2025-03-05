@@ -29,7 +29,7 @@ export class PhysicsEngine {
 		// Event callbacks
 		this.callbacks = {
 			beforeUpdate: null,
-			afterUpdate: null
+			afterUpdate: null,
 		};
 	}
 
@@ -66,7 +66,7 @@ export class PhysicsEngine {
 		this.runner = Runner.create();
 		Runner.run(this.runner, this.engine);
 
-			// Initialize object pool
+		// Initialize object pool
 		this.initObjectPool();
 
 		// Set up Matter.js events
@@ -91,11 +91,15 @@ export class PhysicsEngine {
 	setupEngineEvents() {
 		// Add Matter.js engine events if needed
 		Events.on(this.engine, 'beforeUpdate', () => {
-			if (this.callbacks.beforeUpdate) {this.callbacks.beforeUpdate();}
+			if (this.callbacks.beforeUpdate) {
+				this.callbacks.beforeUpdate();
+			}
 		});
 
 		Events.on(this.engine, 'afterUpdate', () => {
-			if (this.callbacks.afterUpdate) {this.callbacks.afterUpdate();}
+			if (this.callbacks.afterUpdate) {
+				this.callbacks.afterUpdate();
+			}
 
 			// Check for bodies that went off-screen and can be recycled
 			this.recycleOffscreenBodies();
@@ -161,7 +165,9 @@ export class PhysicsEngine {
 
 		// Get a free object from the pool
 		const physicsObject = this.getObjectFromPool();
-		if (!physicsObject) {return null;}
+		if (!physicsObject) {
+			return null;
+		}
 
 		// Determine random object type based on weights
 		const typeIndex = this.getWeightedRandomTypeIndex();
@@ -193,13 +199,17 @@ export class PhysicsEngine {
 	 */
 	getWeightedRandomTypeIndex() {
 		const weights = config.objects.typeWeights;
-		const totalWeight = weights.reduce((sum, weight) => {return sum + weight}, 0);
+		const totalWeight = weights.reduce((sum, weight) => {
+			return sum + weight;
+		}, 0);
 		const randomValue = Math.random() * totalWeight;
 
 		let weightSum = 0;
 		for (let i = 0; i < weights.length; i++) {
 			weightSum += weights[i];
-			if (randomValue <= weightSum) {return i;}
+			if (randomValue <= weightSum) {
+				return i;
+			}
 		}
 
 		return 0; // Default to first type
@@ -211,7 +221,9 @@ export class PhysicsEngine {
 	getObjectFromPool() {
 		// First try to find an inactive object
 		for (const obj of this.objectPool) {
-			if (!obj.active) {return obj;}
+			if (!obj.active) {
+				return obj;
+			}
 		}
 
 		// If no inactive objects, recycle the oldest
@@ -222,17 +234,23 @@ export class PhysicsEngine {
 	 * Recycle the oldest active object
 	 */
 	recycleOldestObject() {
-		if (this.activeObjects.length === 0) {return null;}
+		if (this.activeObjects.length === 0) {
+			return null;
+		}
 
 		// Find the oldest active object
-		this.activeObjects.sort((a, b) => {return a.creationTime - b.creationTime});
+		this.activeObjects.sort((a, b) => {
+			return a.creationTime - b.creationTime;
+		});
 		const oldestObject = this.activeObjects.shift();
 
 		// Remove from world and mark as inactive
 		Composite.remove(this.engine.world, oldestObject.body);
 
 		// Remove from dynamic bodies array
-		const index = this.bodies.dynamic.findIndex(body => {return body === oldestObject.body});
+		const index = this.bodies.dynamic.findIndex((body) => {
+			return body === oldestObject.body;
+		});
 		if (index !== -1) {
 			this.bodies.dynamic.splice(index, 1);
 		}
@@ -257,9 +275,7 @@ export class PhysicsEngine {
 			const pos = obj.body.position;
 
 			// Check if the object is far off-screen
-			if (pos.y > height + buffer ||
-				pos.x < -buffer ||
-				pos.x > width + buffer) {
+			if (pos.y > height + buffer || pos.x < -buffer || pos.x > width + buffer) {
 				toRecycle.push(i);
 			}
 		}
@@ -272,7 +288,9 @@ export class PhysicsEngine {
 			Composite.remove(this.engine.world, obj.body);
 
 			// Remove from dynamic bodies array
-			const bodyIndex = this.bodies.dynamic.findIndex(body => {return body === obj.body});
+			const bodyIndex = this.bodies.dynamic.findIndex((body) => {
+				return body === obj.body;
+			});
 			if (bodyIndex !== -1) {
 				this.bodies.dynamic.splice(bodyIndex, 1);
 			}
@@ -367,7 +385,9 @@ export class PhysicsEngine {
 	 * Set a visual effect on a body (like highlighting during drag)
 	 */
 	setBodyEffect(body, effect = 'drag', active = true) {
-		if (!body || !body.render) {return;}
+		if (!body || !body.render) {
+			return;
+		}
 
 		switch (effect) {
 			case 'drag':
@@ -376,6 +396,270 @@ export class PhysicsEngine {
 			case 'hover':
 				// Could add hover effects here
 				break;
+		}
+	}
+
+	/**
+	 * Create a new circle body
+	 * @param {Object} start - Start point {x, y}
+	 * @param {Object} end - End point {x, y}
+	 */
+	createCircle(start, end) {
+		// Calculate radius from distance between points
+		const dx = end.x - start.x;
+		const dy = end.y - start.y;
+		let radius = Math.sqrt(dx * dx + dy * dy);
+
+		// Clamp radius to reasonable bounds
+		radius = Math.max(config.objects.minSize, Math.min(radius, config.objects.maxSize * 2));
+
+		// Create the circle at the start point
+		const body = Bodies.circle(start.x, start.y, radius, {
+			restitution: config.physics.restitution,
+			friction: config.physics.friction,
+			render: {
+				fillStyle: this.getRandomColor(),
+			},
+			isInteractive: true,
+		});
+
+		// Add the new body to the world
+		Composite.add(this.engine.world, body);
+
+		// Add to dynamic bodies
+		this.bodies.dynamic.push(body);
+
+		return body;
+	}
+
+	/**
+	 * Create a new box body
+	 * @param {Object} start - Start point {x, y}
+	 * @param {Object} end - End point {x, y}
+	 */
+	createBox(start, end) {
+		// Calculate width and height
+		const width = Math.abs(end.x - start.x);
+		const height = Math.abs(end.y - start.y);
+
+		// Clamp size to reasonable bounds
+		const clampedWidth = Math.max(
+			config.objects.minSize,
+			Math.min(width, config.objects.maxSize * 3),
+		);
+		const clampedHeight = Math.max(
+			config.objects.minSize,
+			Math.min(height, config.objects.maxSize * 3),
+		);
+
+		// Calculate center point
+		const centerX = start.x + (end.x - start.x) / 2;
+		const centerY = start.y + (end.y - start.y) / 2;
+
+		// Create the box
+		const body = Bodies.rectangle(centerX, centerY, clampedWidth, clampedHeight, {
+			restitution: config.physics.restitution,
+			friction: config.physics.friction,
+			render: {
+				fillStyle: this.getRandomColor(),
+			},
+			isInteractive: true,
+		});
+
+		// Add the new body to the world
+		Composite.add(this.engine.world, body);
+
+		// Add to dynamic bodies
+		this.bodies.dynamic.push(body);
+
+		return body;
+	}
+
+	/**
+	 * Create a new polygon body
+	 * @param {Object} start - Start point {x, y}
+	 * @param {Object} end - End point {x, y}
+	 */
+	createPolygon(start, end) {
+		// Calculate radius from distance between points
+		const dx = end.x - start.x;
+		const dy = end.y - start.y;
+		let radius = Math.sqrt(dx * dx + dy * dy);
+
+		// Clamp radius to reasonable bounds
+		radius = Math.max(config.objects.minSize, Math.min(radius, config.objects.maxSize * 2));
+
+		// Determine number of sides (3-8)
+		const sides = Math.floor(3 + Math.random() * 6);
+
+		// Create the polygon at the start point
+		const body = Bodies.polygon(start.x, start.y, sides, radius, {
+			restitution: config.physics.restitution,
+			friction: config.physics.friction,
+			render: {
+				fillStyle: this.getRandomColor(),
+			},
+			isInteractive: true,
+		});
+
+		// Add the new body to the world
+		Composite.add(this.engine.world, body);
+
+		// Add to dynamic bodies
+		this.bodies.dynamic.push(body);
+
+		return body;
+	}
+
+	/**
+	 * Create a new line body (implemented as a thin rectangle)
+	 * @param {Object} start - Start point {x, y}
+	 * @param {Object} end - End point {x, y}
+	 */
+	createLine(start, end) {
+		// Calculate line properties
+		const dx = end.x - start.x;
+		const dy = end.y - start.y;
+		const length = Math.sqrt(dx * dx + dy * dy);
+		const thickness = 5; // Line thickness
+
+		// Clamp length to reasonable bounds
+		const clampedLength = Math.min(length, config.objects.maxSize * 5);
+
+		// Calculate angle
+		const angle = Math.atan2(dy, dx);
+
+		// Calculate center point
+		const centerX = start.x + dx / 2;
+		const centerY = start.y + dy / 2;
+
+		// Create a thin rectangle
+		const body = Bodies.rectangle(centerX, centerY, clampedLength, thickness, {
+			angle,
+			restitution: config.physics.restitution,
+			friction: config.physics.friction,
+			render: {
+				fillStyle: this.getRandomColor(),
+			},
+			isInteractive: true,
+		});
+
+		// Add the new body to the world
+		Composite.add(this.engine.world, body);
+
+		// Add to dynamic bodies
+		this.bodies.dynamic.push(body);
+
+		return body;
+	}
+
+	/**
+	 * Create a preview shape for shape tools
+	 * @param {string} tool - The current tool ('circle', 'box', etc.)
+	 * @param {Object} start - Start point {x, y}
+	 * @param {Object} end - End point {x, y}
+	 * @returns {Object} Preview object
+	 */
+	createShapePreview(tool, start, end) {
+		// Similar to the create methods above, but returns rendering data only
+		switch (tool) {
+			case 'circle': {
+				const dx = end.x - start.x;
+				const dy = end.y - start.y;
+				const radius = Math.min(Math.sqrt(dx * dx + dy * dy), config.objects.maxSize * 2);
+				return {
+					type: 'circle',
+					x: start.x,
+					y: start.y,
+					radius: Math.max(config.objects.minSize, radius),
+				};
+			}
+
+			case 'box': {
+				const width = Math.abs(end.x - start.x);
+				const height = Math.abs(end.y - start.y);
+				const clampedWidth = Math.max(
+					config.objects.minSize,
+					Math.min(width, config.objects.maxSize * 3),
+				);
+				const clampedHeight = Math.max(
+					config.objects.minSize,
+					Math.min(height, config.objects.maxSize * 3),
+				);
+
+				return {
+					type: 'box',
+					x: Math.min(start.x, end.x),
+					y: Math.min(start.y, end.y),
+					width: clampedWidth,
+					height: clampedHeight,
+				};
+			}
+
+			case 'polygon': {
+				const dx = end.x - start.x;
+				const dy = end.y - start.y;
+				const radius = Math.min(Math.sqrt(dx * dx + dy * dy), config.objects.maxSize * 2);
+				const sides = Math.floor(3 + Math.random() * 6);
+
+				// Generate vertices for a regular polygon
+				const vertices = [];
+				for (let i = 0; i < sides; i++) {
+					const angle = (i / sides) * Math.PI * 2;
+					const actualRadius = Math.max(config.objects.minSize, radius);
+					vertices.push({
+						x: start.x + actualRadius * Math.cos(angle),
+						y: start.y + actualRadius * Math.sin(angle),
+					});
+				}
+
+				return {
+					type: 'polygon',
+					vertices,
+				};
+			}
+
+			case 'line': {
+				return {
+					type: 'line',
+					x1: start.x,
+					y1: start.y,
+					x2: end.x,
+					y2: end.y,
+					thickness: 5,
+				};
+			}
+
+			default:
+				return null;
+		}
+	}
+
+	/**
+	 * Remove a body from the simulation
+	 * @param {Object} body - The Matter.js body to remove
+	 */
+	destroyBody(body) {
+		if (!body) {
+			return;
+		}
+
+		// Remove body from the world
+		Composite.remove(this.engine.world, body);
+
+		// If it's a dynamic body, remove it from the array
+		const index = this.bodies.dynamic.indexOf(body);
+		if (index !== -1) {
+			this.bodies.dynamic.splice(index, 1);
+		}
+
+		// If it's a pooled object, find and deactivate it
+		const objIndex = this.activeObjects.findIndex((obj) => {
+			return obj.body === body;
+		});
+		if (objIndex !== -1) {
+			this.activeObjects[objIndex].deactivate();
+			this.activeObjects.splice(objIndex, 1);
 		}
 	}
 
@@ -439,7 +723,7 @@ export class PhysicsEngine {
 	 * Get a random color from predefined palette in config
 	 */
 	getRandomColor() {
-		const {colors} = config.visual;
+		const { colors } = config.visual;
 		return colors[Math.floor(Math.random() * colors.length)];
 	}
 
