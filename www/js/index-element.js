@@ -1,4 +1,5 @@
 import { PhysicsEngine } from './physics-engine.js';
+import { config } from './config.js';
 
 export class IndexElement extends HTMLElement {
 	constructor() {
@@ -13,6 +14,10 @@ export class IndexElement extends HTMLElement {
 		this.dragBody = null;
 		this.startPoint = { x: 0, y: 0 };
 		this.originalBodyStyle = null;
+		this.lastSpawnTime = 0;
+
+		// Stats for UI
+		this.activeObjects = 0;
 
 		// Initialize observers
 		this.resizeObserver = null;
@@ -44,8 +49,10 @@ export class IndexElement extends HTMLElement {
           height: 100%;
           overflow: hidden;
           border-radius: 8px;
-          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
           touch-action: none; /* Prevents browser handling of gestures */
+          background-color: #121212;
+          position: relative;
         }
         canvas {
           width: 100%;
@@ -53,9 +60,21 @@ export class IndexElement extends HTMLElement {
           display: block;
           touch-action: none; /* Important for pointer events to work properly */
         }
+        .stats-display {
+          position: absolute;
+          top: 10px;
+          right: 10px;
+          background-color: rgba(0, 0, 0, 0.5);
+          color: white;
+          padding: 5px 10px;
+          border-radius: 4px;
+          font-family: monospace;
+          pointer-events: none;
+        }
       </style>
       <div class="canvas-container">
         <canvas id="physics-canvas"></canvas>
+        <div class="stats-display">Bodies: 0</div>
       </div>
     `;
 	}
@@ -69,13 +88,18 @@ export class IndexElement extends HTMLElement {
 		this.physics.init().createBodies();
 
 		// Register any callbacks if needed
-		this.physics.on('beforeUpdate', () => {
-			// Custom logic before physics update
-		});
-
 		this.physics.on('afterUpdate', () => {
-			// Custom logic after physics update
+			this.updateStats();
 		});
+	}
+
+	/**
+	 * Update stats display
+	 */
+	updateStats() {
+		const statsDisplay = this.shadowRoot.querySelector('.stats-display');
+		const activeObjects = this.physics.getActiveObjectCount();
+		statsDisplay.textContent = `Bodies: ${activeObjects}`;
 	}
 
 	setupEventListeners() {
@@ -121,7 +145,17 @@ export class IndexElement extends HTMLElement {
 		e.target.setPointerCapture(e.pointerId);
 
 		const point = this.getPointFromEvent(e);
-		this.startDraggingAtPoint(point);
+
+		// Check if we hit an existing body first
+		const body = this.physics.getBodyAtPoint(point);
+
+		if (body) {
+			// Start dragging existing body
+			this.startDraggingBody(body, point);
+		} else {
+			// Spawn a new object
+			this.spawnObjectAtPoint(point);
+		}
 
 		// Prevent default behavior
 		e.preventDefault();
@@ -131,13 +165,63 @@ export class IndexElement extends HTMLElement {
 	 * Handle pointer move event
 	 */
 	handlePointerMove(e) {
-		if (this.isDragging && this.dragBody) {
-			const point = this.getPointFromEvent(e);
-			this.moveBodyToPoint(point);
+		const point = this.getPointFromEvent(e);
 
+		if (this.isDragging && this.dragBody) {
+			// Move existing body
+			this.moveBodyToPoint(point);
 			// Prevent default behavior like scrolling
 			e.preventDefault();
+		} else if (this.canSpawn()) {
+			// Spawn objects while moving on empty space
+			this.spawnObjectAtPoint(point);
 		}
+	}
+
+	/**
+	 * Start dragging a specific body
+	 */
+	startDraggingBody(body, point) {
+		this.isDragging = true;
+		this.dragBody = body;
+		this.startPoint = point;
+
+		// Apply a visual effect for dragging feedback
+		this.physics.setBodyEffect(body, 'drag', true);
+	}
+
+	/**
+	 * Spawn a new object at the given point
+	 */
+	spawnObjectAtPoint(point) {
+		// Check if enough time passed since last spawn
+		const now = Date.now();
+		if (now - this.lastSpawnTime < config.limits.spawnInterval) {
+			return null;
+		}
+
+		// Spawn new object
+		const newObject = this.physics.spawnObjectAtPoint(point);
+		if (newObject) {
+			// Apply initial randomized velocity for more interesting physics
+			const forceMagnitude = 0.005 + Math.random() * 0.01;
+			const angle = Math.random() * Math.PI * 2;
+			newObject.applyForce({
+				x: Math.cos(angle) * forceMagnitude,
+				y: Math.sin(angle) * forceMagnitude
+			});
+
+			this.lastSpawnTime = now;
+		}
+
+		return newObject;
+	}
+
+	/**
+	 * Check if enough time has passed to spawn a new object
+	 */
+	canSpawn() {
+		return Date.now() - this.lastSpawnTime >= config.limits.spawnInterval;
 	}
 
 	/**
@@ -176,21 +260,6 @@ export class IndexElement extends HTMLElement {
 			x: e.clientX - rect.left,
 			y: e.clientY - rect.top,
 		};
-	}
-
-	/**
-	 * Start dragging a body at the given point
-	 */
-	startDraggingAtPoint(point) {
-		const body = this.physics.getBodyAtPoint(point);
-		if (body) {
-			this.isDragging = true;
-			this.dragBody = body;
-			this.startPoint = point;
-
-			// Apply a visual effect for dragging feedback
-			this.physics.setBodyEffect(body, 'drag', true);
-		}
 	}
 
 	/**

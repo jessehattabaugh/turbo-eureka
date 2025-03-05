@@ -1,4 +1,6 @@
 import { Engine, Render, Runner, Bodies, Composite, Body, Events } from 'matter-js';
+import { PhysicsObject } from './physics-object.js';
+import { config } from './config.js';
 
 /**
  * PhysicsEngine class to handle Matter.js functionality
@@ -19,6 +21,11 @@ export class PhysicsEngine {
 		// Track currently interactive bodies
 		this.activeBody = null;
 
+		// Object pool for reuse
+		this.objectPool = [];
+		this.activeObjects = [];
+		this.lastSpawnTime = 0;
+
 		// Event callbacks
 		this.callbacks = {
 			beforeUpdate: null,
@@ -33,13 +40,13 @@ export class PhysicsEngine {
 		const width = this.container.clientWidth;
 		const height = this.container.clientHeight;
 
-		// Create engine with improved settings
+		// Create engine with settings from config
 		this.engine = Engine.create({
-			enableSleeping: true,
-			gravity: { x: 0, y: 1, scale: 0.001 },
+			enableSleeping: config.physics.enableSleeping,
+			gravity: config.physics.gravity,
 		});
 
-		// Create renderer with optimized settings
+		// Create renderer with settings from config
 		this.render = Render.create({
 			element: this.container,
 			canvas: this.canvas,
@@ -47,10 +54,10 @@ export class PhysicsEngine {
 			options: {
 				width,
 				height,
-				wireframes: false,
-				background: '#f0f0f0',
-				showSleeping: false,
-				pixelRatio: window.devicePixelRatio || 1,
+				wireframes: config.visual.wireframes,
+				background: config.visual.background,
+				showSleeping: config.visual.showSleeping,
+				pixelRatio: config.physics.pixelRatio,
 			},
 		});
 
@@ -59,10 +66,23 @@ export class PhysicsEngine {
 		this.runner = Runner.create();
 		Runner.run(this.runner, this.engine);
 
+			// Initialize object pool
+		this.initObjectPool();
+
 		// Set up Matter.js events
 		this.setupEngineEvents();
 
 		return this;
+	}
+
+	/**
+	 * Initialize the object pool for reusing physics objects
+	 */
+	initObjectPool() {
+		// Create pool of reusable objects
+		for (let i = 0; i < config.limits.poolSize; i++) {
+			this.objectPool.push(new PhysicsObject());
+		}
 	}
 
 	/**
@@ -76,6 +96,9 @@ export class PhysicsEngine {
 
 		Events.on(this.engine, 'afterUpdate', () => {
 			if (this.callbacks.afterUpdate) {this.callbacks.afterUpdate();}
+
+			// Check for bodies that went off-screen and can be recycled
+			this.recycleOffscreenBodies();
 		});
 	}
 
@@ -89,7 +112,7 @@ export class PhysicsEngine {
 	}
 
 	/**
-	 * Create all the physical bodies
+	 * Create all the physical bodies for boundaries
 	 */
 	createBodies() {
 		const { width, height } = this.render.options;
@@ -114,73 +137,152 @@ export class PhysicsEngine {
 			}),
 		];
 
-		// Create dynamic bodies with interactive properties
-		this.bodies.dynamic = [
-			...this.createBoxes(15, width, height),
-			...this.createCircles(10, width, height),
-		];
-
-		// Add all bodies to the world
-		Composite.add(this.engine.world, [...this.bodies.static, ...this.bodies.dynamic]);
+		// Add all static bodies to the world
+		Composite.add(this.engine.world, this.bodies.static);
 
 		return this;
 	}
 
 	/**
-	 * Create random boxes with pointer-friendly properties
+	 * Spawn a new physics object at the specified position
 	 */
-	createBoxes(count, width, height) {
-		const boxes = [];
-		for (let i = 0; i < count; i++) {
-			const size = 20 + Math.random() * 60;
-			boxes.push(
-				Bodies.rectangle(
-					Math.random() * (width - size) + size / 2,
-					Math.random() * (height / 2),
-					size,
-					size,
-					{
-						restitution: 0.6,
-						friction: 0.1,
-						render: {
-							fillStyle: this.getRandomColor(),
-						},
-						label: 'box',
-						// Mark as interactive for pointer events
-						isInteractive: true,
-					},
-				),
-			);
+	spawnObjectAtPoint(point) {
+		// Check if we can spawn a new object (time and count limits)
+		const now = Date.now();
+		if (now - this.lastSpawnTime < config.limits.spawnInterval) {
+			return null;
 		}
-		return boxes;
+
+		// Check if we're at the body limit
+		if (this.activeObjects.length >= config.limits.maxBodies) {
+			// Recycle the oldest object
+			this.recycleOldestObject();
+		}
+
+		// Get a free object from the pool
+		const physicsObject = this.getObjectFromPool();
+		if (!physicsObject) {return null;}
+
+		// Determine random object type based on weights
+		const typeIndex = this.getWeightedRandomTypeIndex();
+		const type = config.objects.types[typeIndex];
+
+		// Initialize with random properties
+		physicsObject.init(type, point, {
+			label: type,
+			isInteractive: true,
+		});
+
+		// Add to active objects
+		this.activeObjects.push(physicsObject);
+
+		// Add the body to Matter.js world
+		Composite.add(this.engine.world, physicsObject.body);
+
+		// Add to dynamic bodies for collision detection
+		this.bodies.dynamic.push(physicsObject.body);
+
+		// Update last spawn time
+		this.lastSpawnTime = now;
+
+		return physicsObject;
 	}
 
 	/**
-	 * Create random circles with pointer-friendly properties
+	 * Get a weighted random object type based on configured weights
 	 */
-	createCircles(count, width, height) {
-		const circles = [];
-		for (let i = 0; i < count; i++) {
-			const radius = 15 + Math.random() * 30;
-			circles.push(
-				Bodies.circle(
-					Math.random() * (width - 2 * radius) + radius,
-					Math.random() * (height / 3),
-					radius,
-					{
-						restitution: 0.7,
-						friction: 0.05,
-						render: {
-							fillStyle: this.getRandomColor(),
-						},
-						label: 'circle',
-						// Mark as interactive for pointer events
-						isInteractive: true,
-					},
-				),
-			);
+	getWeightedRandomTypeIndex() {
+		const weights = config.objects.typeWeights;
+		const totalWeight = weights.reduce((sum, weight) => {return sum + weight}, 0);
+		const randomValue = Math.random() * totalWeight;
+
+		let weightSum = 0;
+		for (let i = 0; i < weights.length; i++) {
+			weightSum += weights[i];
+			if (randomValue <= weightSum) {return i;}
 		}
-		return circles;
+
+		return 0; // Default to first type
+	}
+
+	/**
+	 * Get an unused object from the pool or recycle the oldest if needed
+	 */
+	getObjectFromPool() {
+		// First try to find an inactive object
+		for (const obj of this.objectPool) {
+			if (!obj.active) {return obj;}
+		}
+
+		// If no inactive objects, recycle the oldest
+		return this.recycleOldestObject();
+	}
+
+	/**
+	 * Recycle the oldest active object
+	 */
+	recycleOldestObject() {
+		if (this.activeObjects.length === 0) {return null;}
+
+		// Find the oldest active object
+		this.activeObjects.sort((a, b) => {return a.creationTime - b.creationTime});
+		const oldestObject = this.activeObjects.shift();
+
+		// Remove from world and mark as inactive
+		Composite.remove(this.engine.world, oldestObject.body);
+
+		// Remove from dynamic bodies array
+		const index = this.bodies.dynamic.findIndex(body => {return body === oldestObject.body});
+		if (index !== -1) {
+			this.bodies.dynamic.splice(index, 1);
+		}
+
+		oldestObject.deactivate();
+
+		return oldestObject;
+	}
+
+	/**
+	 * Check for bodies that went off-screen and can be recycled
+	 */
+	recycleOffscreenBodies() {
+		const { width, height } = this.render.options;
+		const buffer = 100; // Extra buffer beyond the viewport
+
+		const toRecycle = [];
+
+		// Find objects that are far off-screen
+		for (let i = this.activeObjects.length - 1; i >= 0; i--) {
+			const obj = this.activeObjects[i];
+			const pos = obj.body.position;
+
+			// Check if the object is far off-screen
+			if (pos.y > height + buffer ||
+				pos.x < -buffer ||
+				pos.x > width + buffer) {
+				toRecycle.push(i);
+			}
+		}
+
+		// Recycle all off-screen objects
+		for (const index of toRecycle) {
+			const obj = this.activeObjects[index];
+
+			// Remove from world
+			Composite.remove(this.engine.world, obj.body);
+
+			// Remove from dynamic bodies array
+			const bodyIndex = this.bodies.dynamic.findIndex(body => {return body === obj.body});
+			if (bodyIndex !== -1) {
+				this.bodies.dynamic.splice(bodyIndex, 1);
+			}
+
+			// Mark as inactive
+			obj.deactivate();
+
+			// Remove from active objects
+			this.activeObjects.splice(index, 1);
+		}
 	}
 
 	/**
@@ -327,10 +429,17 @@ export class PhysicsEngine {
 	}
 
 	/**
-	 * Get a random color from predefined palette
+	 * Get the number of active physics objects
+	 */
+	getActiveObjectCount() {
+		return this.activeObjects.length;
+	}
+
+	/**
+	 * Get a random color from predefined palette in config
 	 */
 	getRandomColor() {
-		const colors = ['#3a86ff', '#ff006e', '#8338ec', '#fb5607', '#ffbe0b'];
+		const {colors} = config.visual;
 		return colors[Math.floor(Math.random() * colors.length)];
 	}
 
@@ -370,5 +479,9 @@ export class PhysicsEngine {
 		this.bodies.dynamic = [];
 		this.activeBody = null;
 		this.callbacks = {};
+
+		// Clear object pools
+		this.objectPool = [];
+		this.activeObjects = [];
 	}
 }
