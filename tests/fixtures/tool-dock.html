@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tool Dock Test</title>
+  <style>
+    body {
+      background-color: #121212;
+      color: white;
+      font-family: sans-serif;
+      margin: 0;
+      padding: 20px;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    #test-container {
+      margin-top: 200px;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+    }
+
+    #output {
+      margin-top: 20px;
+      padding: 10px;
+      background-color: rgba(255, 255, 255, 0.1);
+      border-radius: 5px;
+      min-height: 150px;
+      width: 400px;
+      font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+  <h1>Tool Dock Component Test</h1>
+
+  <div id="test-container">
+    <tool-dock></tool-dock>
+  </div>
+
+  <div id="output">Tool events will appear here...</div>
+
+  <script type="module">
+    import { ToolDock } from '../../www/js/tool-dock.js';
+
+    // Register the component
+    if (!customElements.get('tool-dock')) {
+      customElements.define('tool-dock', ToolDock);
+    }
+
+    // Set up the output display
+    const outputEl = document.getElementById('output');
+
+    // Add event listener to the tool dock
+    const toolDock = document.querySelector('tool-dock');
+    toolDock.onToolChange = (tool) => {
+      const timestamp = new Date().toLocaleTimeString();
+      outputEl.innerHTML += `<div>[${timestamp}] Tool changed to: ${tool}</div>`;
+
+      // Also expose this for tests
+      window.lastSelectedTool = tool;
+    };
+
+    // Expose the tool dock for tests
+    window.testToolDock = toolDock;
+
+    // Add keyboard event listener for testing keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      outputEl.innerHTML += `<div>Key pressed: ${e.key}</div>`;
+    });
+  </script>
+</body>
+</html>

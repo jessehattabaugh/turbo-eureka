@@ -8,7 +8,12 @@
 		"globals": "latest",
 		"matter-js": "latest",
 		"parcel": "latest",
-		"surge": "latest"
+		"surge": "latest",
+		"@playwright/test": "latest",
+		"serve-handler": "latest",
+		"serve": "latest",
+		"pixelmatch": "latest",
+		"pngjs": "latest"
 	},
 	"scripts": {
 		"build:prod": "parcel build ./www/*.html --dist-dir ./dist --public-url './'",
@@ -16,7 +21,12 @@
 		"deploy:prod": "npm run build:prod && surge ./dist --domain turbo-eureka.surge.sh",
 		"deploy:staging": "npm run build:staging && surge ./dist --domain staging-turbo-eureka.surge.sh",
 		"kill": "npx kill-port 3000",
-		"serve:parcel": "parcel serve ./www/*.html --port 3000"
+		"serve:parcel": "parcel serve ./www/*.html --port 3000",
+		"test": "playwright test",
+		"test:headed": "playwright test --headed",
+		"test:debug": "playwright test --debug",
+		"test:ui": "playwright test --ui",
+		"serve:test": "serve ./tests/fixtures"
 	},
 	"type": "module"
 }
