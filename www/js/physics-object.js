@@ -14,6 +14,7 @@ export class PhysicsObject {
 		this.type = null;
 		this.active = false;
 		this.creationTime = 0;
+		console.debug('🔮 PhysicsObject constructor 🧩');
 	}
 
 	/**
@@ -86,6 +87,12 @@ export class PhysicsObject {
 		this.active = true;
 		this.creationTime = Date.now();
 
+		console.debug('🔮 PhysicsObject init', {
+			type,
+			position,
+			bodyId: this.body.objectId
+		}, '🧩');
+
 		return this;
 	}
 
@@ -96,6 +103,11 @@ export class PhysicsObject {
 	applyForce(force) {
 		if (this.body && this.active) {
 			Body.applyForce(this.body, this.body.position, force);
+			console.debug('🔮 PhysicsObject applyForce', {
+				force,
+				bodyId: this.body.objectId,
+				position: this.body.position
+			}, '🧩');
 		}
 		return this;
 	}
@@ -136,7 +148,9 @@ export class PhysicsObject {
 	 * Deactivate this object for reuse
 	 */
 	deactivate() {
+		const bodyId = this.body ? this.body.objectId : 'unknown';
 		this.active = false;
+		console.debug('🔮 PhysicsObject deactivate', { bodyId }, '🧩');
 		return this;
 	}
 

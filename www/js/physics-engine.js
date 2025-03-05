@@ -31,6 +31,8 @@ export class PhysicsEngine {
 			beforeUpdate: null,
 			afterUpdate: null,
 		};
+
+		console.debug('🔧 PhysicsEngine constructor initialized 🧲');
 	}
 
 	/**
@@ -75,6 +77,12 @@ export class PhysicsEngine {
 		// Set up Matter.js events
 		this.setupEngineEvents();
 
+		console.debug('🔧 PhysicsEngine init complete', {
+			width,
+			height,
+			pixelRatio: config.physics.pixelRatio
+		}, '🧲');
+
 		return this;
 	}
 
@@ -86,6 +94,9 @@ export class PhysicsEngine {
 		for (let i = 0; i < config.limits.poolSize; i++) {
 			this.objectPool.push(new PhysicsObject());
 		}
+		console.debug('🔧 PhysicsEngine initObjectPool', {
+			poolSize: this.objectPool.length
+		}, '🧲');
 	}
 
 	/**
@@ -194,6 +205,12 @@ export class PhysicsEngine {
 		// Update last spawn time
 		this.lastSpawnTime = now;
 
+		console.debug('🔧 PhysicsEngine spawnObjectAtPoint', {
+			type,
+			position: point,
+			totalObjects: this.activeObjects.length
+		}, '🧲');
+
 		return physicsObject;
 	}
 
@@ -259,6 +276,11 @@ export class PhysicsEngine {
 		}
 
 		oldestObject.deactivate();
+
+		console.debug('🔧 PhysicsEngine recycleOldestObject', {
+			objectAge: Date.now() - oldestObject.creationTime,
+			remainingObjects: this.activeObjects.length
+		}, '🧲');
 
 		return oldestObject;
 	}
@@ -431,6 +453,12 @@ export class PhysicsEngine {
 
 		// Add to dynamic bodies
 		this.bodies.dynamic.push(body);
+
+		console.debug('🔧 PhysicsEngine createCircle', {
+			start,
+			end,
+			radius
+		}, '🧲');
 
 		return body;
 	}
@@ -678,9 +706,14 @@ export class PhysicsEngine {
 
 			// Force an engine update
 			Engine.update(this.engine, 16);
+
+			console.debug('🔧 PhysicsEngine destroyBody', {
+				position,
+				remainingBodies: this.bodies.dynamic.length
+			}, '🧲');
 		}
 		catch (error) {
-			console.error('Error destroying body:', error);
+			console.error('🔧 Error destroying body:', error, '🧲');
 		}
 	}
 
@@ -972,6 +1005,8 @@ export class PhysicsEngine {
 			min: { x: 0, y: 0 },
 			max: { x: width, y: height },
 		});
+
+		console.debug('🔧 PhysicsEngine resize', { width, height }, '🧲');
 	}
 
 	/**
@@ -993,6 +1028,8 @@ export class PhysicsEngine {
 	 * Clean up all resources
 	 */
 	destroy() {
+		console.debug('🔧 PhysicsEngine destroy called 🧲');
+
 		// Remove Matter.js events
 		if (this.engine) {
 			Events.off(this.engine);

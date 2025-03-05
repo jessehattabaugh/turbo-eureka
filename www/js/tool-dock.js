@@ -7,9 +7,11 @@ export class ToolDock extends HTMLElement {
 		this.attachShadow({ mode: 'open' });
 		this.currentTool = 'spawn';
 		this._onToolChange = null;
+		console.debug('🧰 ToolDock constructor initialized 🔨');
 	}
 
 	connectedCallback() {
+		console.debug('🧰 ToolDock connectedCallback 🔨');
 		this.render();
 		this.setupEventListeners();
 	}
@@ -134,6 +136,7 @@ export class ToolDock extends HTMLElement {
 		// Tool button clicks
 		this.shadowRoot.querySelectorAll('.tool-button').forEach((button) => {
 			button.addEventListener('click', () => {
+				console.debug('🧰 ToolDock button clicked', { tool: button.dataset.tool }, '🔨');
 				return this.setTool(button.dataset.tool);
 			});
 		});
@@ -169,6 +172,11 @@ export class ToolDock extends HTMLElement {
 			return;
 		}
 
+		console.debug('🧰 ToolDock setTool', {
+			previousTool: this.currentTool,
+			newTool: toolName
+		}, '🔨');
+
 		// Update active button state
 		const buttons = this.shadowRoot.querySelectorAll('.tool-button');
 		buttons.forEach((button) => {
@@ -182,6 +190,7 @@ export class ToolDock extends HTMLElement {
 	}
 
 	disconnectedCallback() {
+		console.debug('🧰 ToolDock disconnectedCallback 🔨');
 		window.removeEventListener('keydown', this.handleKeydown);
 	}
 }

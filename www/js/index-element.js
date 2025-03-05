@@ -10,7 +10,9 @@ export class IndexElement extends HTMLElement {
 		super();
 		this.attachShadow({ mode: 'open' });
 
-			// Physics and tool state
+		console.debug('🎮 IndexElement constructor initialized 🎯');
+
+		// Physics and tool state
 		this.physics = null;
 		this.currentTool = 'spawn';
 
@@ -34,6 +36,7 @@ export class IndexElement extends HTMLElement {
 	}
 
 	connectedCallback() {
+		console.debug('🎮 IndexElement connectedCallback 🎯');
 		this.render();
 		this.initializePhysics();
 		this.setupEventListeners();
@@ -102,7 +105,14 @@ export class IndexElement extends HTMLElement {
 		previewCanvas.height = container.clientHeight;
 		this.previewCtx = previewCanvas.getContext('2d');
 
-			// Initialize physics engine
+		console.debug('🎮 IndexElement initializePhysics', {
+			containerSize: {
+				width: container.clientWidth,
+				height: container.clientHeight
+			}
+		}, '🎯');
+
+		// Initialize physics engine
 		this.physics = new PhysicsEngine(container, canvas);
 		this.physics.init().createBodies();
 		this.physics.on('afterUpdate', () => {return this.updateStats()});
@@ -145,6 +155,10 @@ export class IndexElement extends HTMLElement {
 	 */
 	handleToolChange(tool) {
 		this.currentTool = tool;
+		console.debug('🎮 IndexElement handleToolChange', {
+			previousTool: this.currentTool,
+			newTool: tool
+		}, '🎯');
 		console.log(`Tool changed to: ${tool}`);
 	}
 
@@ -172,6 +186,11 @@ export class IndexElement extends HTMLElement {
 		e.target.setPointerCapture(e.pointerId);
 
 		const point = this.getPointFromEvent(e);
+		console.debug('🎮 IndexElement handlePointerDown', {
+			tool: this.currentTool,
+			point,
+			button: e.button
+		}, '🎯');
 
 		// Handle tool-specific behavior
 		switch (this.currentTool) {
@@ -346,6 +365,11 @@ export class IndexElement extends HTMLElement {
 			});
 
 			this.lastSpawnTime = now;
+
+			console.debug('🎮 IndexElement spawnObjectAtPoint', {
+				point,
+				timeSinceLastSpawn: Date.now() - this.lastSpawnTime
+			}, '🎯');
 		}
 
 		return newObject;
@@ -416,6 +440,16 @@ export class IndexElement extends HTMLElement {
 			}
 		}
 
+		console.debug('🎮 IndexElement finishShapeDrawing', {
+			tool: this.currentTool,
+			start: this.drawStartPoint,
+			end: endPoint,
+			distance: Math.sqrt(
+				Math.pow(endPoint.x - this.drawStartPoint.x, 2) +
+				Math.pow(endPoint.y - this.drawStartPoint.y, 2)
+			)
+		}, '🎯');
+
 		// Reset drawing state
 		this.isDrawing = false;
 		this.drawStartPoint = null;
@@ -462,6 +496,18 @@ export class IndexElement extends HTMLElement {
 			x: this.dragBody.position.x + (point.x - this.startPoint.x),
 			y: this.dragBody.position.y + (point.y - this.startPoint.y),
 		});
+
+		console.debug('🎮 IndexElement moveBodyToPoint', {
+			delta: {
+				x: point.x - this.startPoint.x,
+				y: point.y - this.startPoint.y
+			},
+			newPosition: {
+				x: this.dragBody.position.x,
+				y: this.dragBody.position.y
+			}
+		}, '🎯');
+
 		this.startPoint = point;
 	}
 
@@ -497,6 +543,7 @@ export class IndexElement extends HTMLElement {
 	}
 
 	disconnectedCallback() {
+		console.debug('🎮 IndexElement disconnectedCallback 🎯');
 		this.cleanup();
 	}
 
