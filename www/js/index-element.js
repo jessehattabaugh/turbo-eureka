@@ -1,6 +1,6 @@
 import { PhysicsEngine } from './physics-engine.js';
 import { config } from './config.js';
-import {ToolDock} from './tool-dock.js'; // Import the tool dock component
+import { ToolDock } from './tool-dock.js'; // Import the tool dock component
 
 // Register the custom element
 customElements.define('tool-dock', ToolDock);
@@ -105,17 +105,23 @@ export class IndexElement extends HTMLElement {
 		previewCanvas.height = container.clientHeight;
 		this.previewCtx = previewCanvas.getContext('2d');
 
-		console.debug('🎮 IndexElement initializePhysics', {
-			containerSize: {
-				width: container.clientWidth,
-				height: container.clientHeight
-			}
-		}, '🎯');
+		console.debug(
+			'🎮 IndexElement initializePhysics',
+			{
+				containerSize: {
+					width: container.clientWidth,
+					height: container.clientHeight,
+				},
+			},
+			'🎯',
+		);
 
 		// Initialize physics engine
 		this.physics = new PhysicsEngine(container, canvas);
 		this.physics.init().createBodies();
-		this.physics.on('afterUpdate', () => {return this.updateStats()});
+		this.physics.on('afterUpdate', () => {
+			return this.updateStats();
+		});
 	}
 
 	/**
@@ -155,10 +161,14 @@ export class IndexElement extends HTMLElement {
 	 */
 	handleToolChange(tool) {
 		this.currentTool = tool;
-		console.debug('🎮 IndexElement handleToolChange', {
-			previousTool: this.currentTool,
-			newTool: tool
-		}, '🎯');
+		console.debug(
+			'🎮 IndexElement handleToolChange',
+			{
+				previousTool: this.currentTool,
+				newTool: tool,
+			},
+			'🎯',
+		);
 		console.log(`Tool changed to: ${tool}`);
 	}
 
@@ -186,11 +196,15 @@ export class IndexElement extends HTMLElement {
 		e.target.setPointerCapture(e.pointerId);
 
 		const point = this.getPointFromEvent(e);
-		console.debug('🎮 IndexElement handlePointerDown', {
-			tool: this.currentTool,
-			point,
-			button: e.button
-		}, '🎯');
+		console.debug(
+			'🎮 IndexElement handlePointerDown',
+			{
+				tool: this.currentTool,
+				point,
+				button: e.button,
+			},
+			'🎯',
+		);
 
 		// Handle tool-specific behavior
 		switch (this.currentTool) {
@@ -268,7 +282,9 @@ export class IndexElement extends HTMLElement {
 	 * Update the preview of the shape being drawn
 	 */
 	updateShapePreview(currentPoint) {
-		if (!this.drawStartPoint || !this.previewCtx) {return;}
+		if (!this.drawStartPoint || !this.previewCtx) {
+			return;
+		}
 
 		const ctx = this.previewCtx;
 		const previewCanvas = ctx.canvas;
@@ -280,10 +296,12 @@ export class IndexElement extends HTMLElement {
 		const preview = this.physics.createShapePreview(
 			this.currentTool,
 			this.drawStartPoint,
-			currentPoint
+			currentPoint,
 		);
 
-		if (!preview) {return;}
+		if (!preview) {
+			return;
+		}
 
 		// Draw preview based on type
 		ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
@@ -361,15 +379,19 @@ export class IndexElement extends HTMLElement {
 			const angle = Math.random() * Math.PI * 2;
 			newObject.applyForce({
 				x: Math.cos(angle) * forceMagnitude,
-				y: Math.sin(angle) * forceMagnitude
+				y: Math.sin(angle) * forceMagnitude,
 			});
 
 			this.lastSpawnTime = now;
 
-			console.debug('🎮 IndexElement spawnObjectAtPoint', {
-				point,
-				timeSinceLastSpawn: Date.now() - this.lastSpawnTime
-			}, '🎯');
+			console.debug(
+				'🎮 IndexElement spawnObjectAtPoint',
+				{
+					point,
+					timeSinceLastSpawn: Date.now() - this.lastSpawnTime,
+				},
+				'🎯',
+			);
 		}
 
 		return newObject;
@@ -406,11 +428,13 @@ export class IndexElement extends HTMLElement {
 	 * Finish drawing a shape and create the actual physics body
 	 */
 	finishShapeDrawing(endPoint) {
-		if (!this.drawStartPoint) {return;}
+		if (!this.drawStartPoint) {
+			return;
+		}
 
 		// Clear the preview
 		if (this.previewCtx) {
-			const {canvas} = this.previewCtx;
+			const { canvas } = this.previewCtx;
 			this.previewCtx.clearRect(0, 0, canvas.width, canvas.height);
 		}
 
@@ -440,15 +464,19 @@ export class IndexElement extends HTMLElement {
 			}
 		}
 
-		console.debug('🎮 IndexElement finishShapeDrawing', {
-			tool: this.currentTool,
-			start: this.drawStartPoint,
-			end: endPoint,
-			distance: Math.sqrt(
-				Math.pow(endPoint.x - this.drawStartPoint.x, 2) +
-				Math.pow(endPoint.y - this.drawStartPoint.y, 2)
-			)
-		}, '🎯');
+		console.debug(
+			'🎮 IndexElement finishShapeDrawing',
+			{
+				tool: this.currentTool,
+				start: this.drawStartPoint,
+				end: endPoint,
+				distance: Math.sqrt(
+					Math.pow(endPoint.x - this.drawStartPoint.x, 2) +
+						Math.pow(endPoint.y - this.drawStartPoint.y, 2),
+				),
+			},
+			'🎯',
+		);
 
 		// Reset drawing state
 		this.isDrawing = false;
@@ -466,7 +494,7 @@ export class IndexElement extends HTMLElement {
 
 		// Clear any drawing in progress
 		if (this.isDrawing && this.previewCtx) {
-			const {canvas} = this.previewCtx;
+			const { canvas } = this.previewCtx;
 			this.previewCtx.clearRect(0, 0, canvas.width, canvas.height);
 			this.isDrawing = false;
 			this.drawStartPoint = null;
@@ -497,16 +525,20 @@ export class IndexElement extends HTMLElement {
 			y: this.dragBody.position.y + (point.y - this.startPoint.y),
 		});
 
-		console.debug('🎮 IndexElement moveBodyToPoint', {
-			delta: {
-				x: point.x - this.startPoint.x,
-				y: point.y - this.startPoint.y
+		console.debug(
+			'🎮 IndexElement moveBodyToPoint',
+			{
+				delta: {
+					x: point.x - this.startPoint.x,
+					y: point.y - this.startPoint.y,
+				},
+				newPosition: {
+					x: this.dragBody.position.x,
+					y: this.dragBody.position.y,
+				},
 			},
-			newPosition: {
-				x: this.dragBody.position.x,
-				y: this.dragBody.position.y
-			}
-		}, '🎯');
+			'🎯',
+		);
 
 		this.startPoint = point;
 	}
@@ -564,5 +596,3 @@ export class IndexElement extends HTMLElement {
 		}
 	}
 }
-
-

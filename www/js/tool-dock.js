@@ -172,10 +172,14 @@ export class ToolDock extends HTMLElement {
 			return;
 		}
 
-		console.debug('🧰 ToolDock setTool', {
-			previousTool: this.currentTool,
-			newTool: toolName
-		}, '🔨');
+		console.debug(
+			'🧰 ToolDock setTool',
+			{
+				previousTool: this.currentTool,
+				newTool: toolName,
+			},
+			'🔨',
+		);
 
 		// Update active button state
 		const buttons = this.shadowRoot.querySelectorAll('.tool-button');

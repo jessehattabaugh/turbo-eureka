@@ -77,11 +77,15 @@ export class PhysicsEngine {
 		// Set up Matter.js events
 		this.setupEngineEvents();
 
-		console.debug('🔧 PhysicsEngine init complete', {
-			width,
-			height,
-			pixelRatio: config.physics.pixelRatio
-		}, '🧲');
+		console.debug(
+			'🔧 PhysicsEngine init complete',
+			{
+				width,
+				height,
+				pixelRatio: config.physics.pixelRatio,
+			},
+			'🧲',
+		);
 
 		return this;
 	}
@@ -94,9 +98,13 @@ export class PhysicsEngine {
 		for (let i = 0; i < config.limits.poolSize; i++) {
 			this.objectPool.push(new PhysicsObject());
 		}
-		console.debug('🔧 PhysicsEngine initObjectPool', {
-			poolSize: this.objectPool.length
-		}, '🧲');
+		console.debug(
+			'🔧 PhysicsEngine initObjectPool',
+			{
+				poolSize: this.objectPool.length,
+			},
+			'🧲',
+		);
 	}
 
 	/**
@@ -205,11 +213,15 @@ export class PhysicsEngine {
 		// Update last spawn time
 		this.lastSpawnTime = now;
 
-		console.debug('🔧 PhysicsEngine spawnObjectAtPoint', {
-			type,
-			position: point,
-			totalObjects: this.activeObjects.length
-		}, '🧲');
+		console.debug(
+			'🔧 PhysicsEngine spawnObjectAtPoint',
+			{
+				type,
+				position: point,
+				totalObjects: this.activeObjects.length,
+			},
+			'🧲',
+		);
 
 		return physicsObject;
 	}
@@ -277,10 +289,14 @@ export class PhysicsEngine {
 
 		oldestObject.deactivate();
 
-		console.debug('🔧 PhysicsEngine recycleOldestObject', {
-			objectAge: Date.now() - oldestObject.creationTime,
-			remainingObjects: this.activeObjects.length
-		}, '🧲');
+		console.debug(
+			'🔧 PhysicsEngine recycleOldestObject',
+			{
+				objectAge: Date.now() - oldestObject.creationTime,
+				remainingObjects: this.activeObjects.length,
+			},
+			'🧲',
+		);
 
 		return oldestObject;
 	}
@@ -454,11 +470,15 @@ export class PhysicsEngine {
 		// Add to dynamic bodies
 		this.bodies.dynamic.push(body);
 
-		console.debug('🔧 PhysicsEngine createCircle', {
-			start,
-			end,
-			radius
-		}, '🧲');
+		console.debug(
+			'🔧 PhysicsEngine createCircle',
+			{
+				start,
+				end,
+				radius,
+			},
+			'🧲',
+		);
 
 		return body;
 	}
@@ -686,7 +706,9 @@ export class PhysicsEngine {
 			}
 
 			// Find and deactivate the corresponding PhysicsObject
-			const objIndex = this.activeObjects.findIndex(obj => {return obj.body === body});
+			const objIndex = this.activeObjects.findIndex((obj) => {
+				return obj.body === body;
+			});
 			if (objIndex !== -1) {
 				const obj = this.activeObjects[objIndex];
 				obj.deactivate();
@@ -707,12 +729,15 @@ export class PhysicsEngine {
 			// Force an engine update
 			Engine.update(this.engine, 16);
 
-			console.debug('🔧 PhysicsEngine destroyBody', {
-				position,
-				remainingBodies: this.bodies.dynamic.length
-			}, '🧲');
-		}
-		catch (error) {
+			console.debug(
+				'🔧 PhysicsEngine destroyBody',
+				{
+					position,
+					remainingBodies: this.bodies.dynamic.length,
+				},
+				'🧲',
+			);
+		} catch (error) {
 			console.error('🔧 Error destroying body:', error, '🧲');
 		}
 	}
@@ -726,7 +751,9 @@ export class PhysicsEngine {
 		const range = 80;
 
 		for (const body of allBodies) {
-			if (body.isStatic) {continue;}
+			if (body.isStatic) {
+				continue;
+			}
 
 			const dx = body.position.x - position.x;
 			const dy = body.position.y - position.y;
@@ -737,13 +764,13 @@ export class PhysicsEngine {
 				const force = 0.001 / Math.max(0.1, distance);
 				const direction = {
 					x: dx / (distance || 1),
-					y: dy / (distance || 1)
+					y: dy / (distance || 1),
 				};
 
 				// Apply force to wake up the physics
 				Body.applyForce(body, body.position, {
 					x: direction.x * force,
-					y: direction.y * force
+					y: direction.y * force,
 				});
 			}
 		}
@@ -759,32 +786,34 @@ export class PhysicsEngine {
 		const bodies = Composite.allBodies(this.engine.world);
 
 		for (const body of bodies) {
-			if (body.isStatic) {continue;}
+			if (body.isStatic) {
+				continue;
+			}
 
 			// Calculate distance
 			const dx = body.position.x - position.x;
 			const dy = body.position.y - position.y;
 			const distance = Math.sqrt(dx * dx + dy * dy);
 
-				// Apply force if within radius
-				if (distance < radius) {
-					// Calculate force magnitude (stronger closer to center)
-					const magnitude = force * (1 - Math.min(1, distance / radius));
+			// Apply force if within radius
+			if (distance < radius) {
+				// Calculate force magnitude (stronger closer to center)
+				const magnitude = force * (1 - Math.min(1, distance / radius));
 
-					// Calculate direction (normalize)
-					const direction = {
-						x: dx / (distance || 1),
-						y: dy / (distance || 1)
-					};
+				// Calculate direction (normalize)
+				const direction = {
+					x: dx / (distance || 1),
+					y: dy / (distance || 1),
+				};
 
-					// Apply the force
-					Body.applyForce(body, body.position, {
-						x: direction.x * magnitude,
-						y: direction.y * magnitude
-					});
-				}
+				// Apply the force
+				Body.applyForce(body, body.position, {
+					x: direction.x * magnitude,
+					y: direction.y * magnitude,
+				});
 			}
 		}
+	}
 
 	/**
 	 * Apply a small force to bodies near a given position
@@ -794,7 +823,9 @@ export class PhysicsEngine {
 		const bodies = Composite.allBodies(this.engine.world);
 
 		for (const body of bodies) {
-			if (body.isStatic) {continue;}
+			if (body.isStatic) {
+				continue;
+			}
 
 			// Calculate distance
 			const dx = body.position.x - position.x;
@@ -814,7 +845,7 @@ export class PhysicsEngine {
 
 				Body.applyForce(body, body.position, {
 					x: forceDx,
-					y: forceDy
+					y: forceDy,
 				});
 			}
 		}
@@ -826,7 +857,9 @@ export class PhysicsEngine {
 	 */
 	forceRemoveBody(bodyToRemove) {
 		// Save all bodies except the one to remove
-		const bodies = Composite.allBodies(this.engine.world).filter(b => {return b !== bodyToRemove});
+		const bodies = Composite.allBodies(this.engine.world).filter((b) => {
+			return b !== bodyToRemove;
+		});
 
 		// Clear the world
 		Composite.clear(this.engine.world);
@@ -862,7 +895,7 @@ export class PhysicsEngine {
 				// Give it a tiny velocity to ensure it's active
 				Body.setVelocity(body, {
 					x: body.velocity.x + (Math.random() - 0.5) * 0.05,
-					y: body.velocity.y + (Math.random() - 0.5) * 0.05
+					y: body.velocity.y + (Math.random() - 0.5) * 0.05,
 				});
 			}
 		}
@@ -882,7 +915,9 @@ export class PhysicsEngine {
 		const searchRadius = 100; // Search in a larger area
 
 		for (const body of allBodies) {
-			if (body.isStatic) {continue;}
+			if (body.isStatic) {
+				continue;
+			}
 
 			// Calculate distance to the position
 			const dx = body.position.x - position.x;
@@ -898,7 +933,7 @@ export class PhysicsEngine {
 				// Apply the force
 				Body.applyForce(body, body.position, {
 					x: forceX,
-					y: forceY
+					y: forceY,
 				});
 			}
 		}
@@ -944,7 +979,7 @@ export class PhysicsEngine {
 				const forceMagnitude = 0.0001;
 				Body.applyForce(body, body.position, {
 					x: (Math.random() - 0.5) * forceMagnitude,
-					y: (Math.random() - 0.5) * forceMagnitude
+					y: (Math.random() - 0.5) * forceMagnitude,
 				});
 			}
 		}

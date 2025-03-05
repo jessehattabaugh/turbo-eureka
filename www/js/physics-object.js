@@ -87,11 +87,15 @@ export class PhysicsObject {
 		this.active = true;
 		this.creationTime = Date.now();
 
-		console.debug('🔮 PhysicsObject init', {
-			type,
-			position,
-			bodyId: this.body.objectId
-		}, '🧩');
+		console.debug(
+			'🔮 PhysicsObject init',
+			{
+				type,
+				position,
+				bodyId: this.body.objectId,
+			},
+			'🧩',
+		);
 
 		return this;
 	}
@@ -103,11 +107,15 @@ export class PhysicsObject {
 	applyForce(force) {
 		if (this.body && this.active) {
 			Body.applyForce(this.body, this.body.position, force);
-			console.debug('🔮 PhysicsObject applyForce', {
-				force,
-				bodyId: this.body.objectId,
-				position: this.body.position
-			}, '🧩');
+			console.debug(
+				'🔮 PhysicsObject applyForce',
+				{
+					force,
+					bodyId: this.body.objectId,
+					position: this.body.position,
+				},
+				'🧩',
+			);
 		}
 		return this;
 	}
@@ -129,7 +137,9 @@ export class PhysicsObject {
 	 * @param {boolean} active - Whether to apply or remove the effect
 	 */
 	setEffect(effect, active = true) {
-		if (!this.body || !this.body.render || !this.active) {return this;}
+		if (!this.body || !this.body.render || !this.active) {
+			return this;
+		}
 
 		switch (effect) {
 			case 'drag':
@@ -158,7 +168,7 @@ export class PhysicsObject {
 	 * Get a random color for the object
 	 */
 	getRandomColor() {
-		const {colors} = config.visual;
+		const { colors } = config.visual;
 		return colors[Math.floor(Math.random() * colors.length)];
 	}
 }
