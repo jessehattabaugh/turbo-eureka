@@ -26,10 +26,9 @@ async function selectTool(page, toolName) {
 	}, toolName);
 }
 
-
-
 test.describe('User Interaction Tests', () => {
 	test.beforeEach(async ({ page }) => {
+		// Use baseURL from playwright config which will be either staging or local
 		await page.goto('/');
 		await page.waitForSelector('te-index');
 	});

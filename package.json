@@ -13,7 +13,11 @@
 		"serve-handler": "latest",
 		"serve": "latest",
 		"pixelmatch": "latest",
-		"pngjs": "latest"
+		"pngjs": "latest",
+		"cross-env": "latest",
+		"chokidar": "latest",
+		"npm-run-all": "latest",
+		"lodash-es": "latest"
 	},
 	"scripts": {
 		"build:prod": "parcel build ./www/*.html --dist-dir ./dist --public-url './'",
@@ -26,8 +30,14 @@
 		"test:headed": "playwright test --headed",
 		"test:debug": "playwright test --debug",
 		"test:ui": "playwright test --ui",
+		"test:local": "cross-env TEST_ENV=local playwright test",
+		"test:local:headed": "cross-env TEST_ENV=local playwright test --headed",
+		"test:local:watch": "node scripts/watch-and-test.js",
+		"test:staging": "playwright test",
 		"serve:test": "serve ./tests/fixtures",
-		"pretest": "npx playwright install"
+		"pretest": "npx playwright install",
+		"deploy-test:staging": "node scripts/deploy-with-tests.js",
+		"deploy-safe:prod": "node scripts/deploy-with-tests.js --prod"
 	},
 	"type": "module"
 }

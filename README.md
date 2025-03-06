@@ -60,11 +60,18 @@ npx playwright install
 The following test commands are available:
 
 ```bash
-# Run all tests in headless mode (default)
+# Run all tests against the staging environment (default)
 npm test
 
+# Run tests against the local development server
+npm run test:local
+
+# Watch for changes and automatically run tests against local server
+npm run test:local:watch
+
 # Run tests with browsers visible
-npm run test:headed
+npm run test:headed          # Against staging
+npm run test:local:headed    # Against local server
 
 # Run tests with Playwright's interactive debugging UI
 npm run test:debug
@@ -150,13 +157,27 @@ When writing tests, follow these patterns:
 
 ## Deployment
 
+The project can be deployed to both staging and production environments using these commands:
+
 ```bash
+# Build and deploy to staging environment
+npm run deploy:staging
+
 # Build and deploy to production
 npm run deploy:prod
 
-# Build and deploy to staging
-npm run deploy:staging
+# Build, deploy to staging, and run tests
+npm run deploy-test:staging
+
+# Safe deployment: Deploy to staging, run tests, and if successful, deploy to production
+npm run deploy-safe:prod
 ```
+
+These automated deployment scripts help ensure that code is properly tested before reaching production. The process works as follows:
+
+1. **Staging Deployment**: Code is built and deployed to the staging environment
+2. **Automated Testing**: Comprehensive tests are run against the staging deployment
+3. **Production Deployment**: If tests pass, code is built and deployed to production
 
 You can view the live application at:
 - Production: [https://turbo-eureka.surge.sh](https://turbo-eureka.surge.sh)
