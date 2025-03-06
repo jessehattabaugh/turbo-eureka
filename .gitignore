@@ -1,5 +1,7 @@
 node_modules
 dist
 
-# Generated routes file
-www/scripts/routes.json
+# test results
+test-results
+/tests/screenshots/actual
+/tests/screenshots/diff
