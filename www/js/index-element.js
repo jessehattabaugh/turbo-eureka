@@ -1,9 +1,5 @@
 import { PhysicsEngine } from './physics-engine.js';
 import { config } from './config.js';
-import { ToolDock } from './tool-dock.js'; // Import the tool dock component
-
-// Register the custom element
-customElements.define('tool-dock', ToolDock);
 
 export class IndexElement extends HTMLElement {
 	constructor() {
@@ -15,10 +11,12 @@ export class IndexElement extends HTMLElement {
 		// Physics and tool state
 		this.physics = null;
 		this.currentTool = 'spawn';
+		this.availableTools = ['spawn', 'draw', 'drag', 'explode', 'erase'];
 
 		// Drawing state
 		this.isDrawing = false;
 		this.drawStartPoint = null;
+		this.drawShape = 'circle'; // Default shape for drawing
 		this.previewCtx = null;
 
 		// Dragging state
@@ -41,6 +39,7 @@ export class IndexElement extends HTMLElement {
 		this.initializePhysics();
 		this.setupEventListeners();
 		this.setupResizeObserver();
+		this.createToolbar();
 	}
 
 	render() {
@@ -85,14 +84,97 @@ export class IndexElement extends HTMLElement {
           pointer-events: none;
           z-index: 10;
         }
+        .toolbar {
+          position: absolute;
+          bottom: 10px;
+          left: 50%;
+          transform: translateX(-50%);
+          display: flex;
+          gap: 5px;
+          background-color: rgba(0, 0, 0, 0.6);
+          padding: 5px 10px;
+          border-radius: 20px;
+          z-index: 20;
+        }
+        .tool-button {
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          background-color: #333;
+          border: none;
+          color: white;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 16px;
+          transition: background-color 0.2s;
+        }
+        .tool-button.active {
+          background-color: #3a86ff;
+        }
+        .tool-button:hover {
+          background-color: #555;
+        }
+        .tool-button.active:hover {
+          background-color: #2a76ef;
+        }
       </style>
       <div class="canvas-container">
         <canvas id="physics-canvas"></canvas>
         <canvas id="preview-canvas"></canvas>
         <div class="stats-display">Bodies: 0</div>
+        <div class="toolbar"></div>
       </div>
-      <tool-dock></tool-dock>
     `;
+	}
+
+	createToolbar() {
+		const toolbar = this.shadowRoot.querySelector('.toolbar');
+
+		// Tool icons/labels
+		const toolIcons = {
+			spawn: '➕',
+			draw: '✏️',
+			drag: '✋',
+			explode: '💥',
+			erase: '🗑️'
+		};
+
+		// Create buttons for each tool
+		this.availableTools.forEach(tool => {
+			const button = document.createElement('button');
+			button.classList.add('tool-button');
+			button.dataset.tool = tool;
+			button.textContent = toolIcons[tool] || tool;
+			button.title = this.capitalizeFirstLetter(tool);
+
+			if (tool === this.currentTool) {
+				button.classList.add('active');
+			}
+
+			button.addEventListener('click', () => {return this.handleToolChange(tool)});
+			toolbar.appendChild(button);
+		});
+	}
+
+	capitalizeFirstLetter(string) {
+		return string.charAt(0).toUpperCase() + string.slice(1);
+	}
+
+	handleToolChange(tool) {
+		// Update active tool
+		this.currentTool = tool;
+
+		// Update UI
+		const toolbar = this.shadowRoot.querySelector('.toolbar');
+		toolbar.querySelectorAll('.tool-button').forEach(btn => {
+			if (btn.dataset.tool === tool) {
+				btn.classList.add('active');
+			} else {
+				btn.classList.remove('active');
+			}
+		});
 	}
 
 	initializePhysics() {
@@ -150,42 +232,6 @@ export class IndexElement extends HTMLElement {
 		canvas.addEventListener('contextmenu', (e) => {
 			e.preventDefault();
 		});
-
-		// Set up tool dock listener
-		const toolDock = this.shadowRoot.querySelector('tool-dock');
-		toolDock.onToolChange = this.handleToolChange;
-	}
-
-	/**
-	 * Handle tool selection change from the dock
-	 */
-	handleToolChange(tool) {
-		this.currentTool = tool;
-		console.debug(
-			'🎮 IndexElement handleToolChange',
-			{
-				previousTool: this.currentTool,
-				newTool: tool,
-			},
-			'🎯',
-		);
-		console.log(`Tool changed to: ${tool}`);
-	}
-
-	removeEventListeners() {
-		const canvas = this.shadowRoot.querySelector('#physics-canvas');
-		if (!canvas) {
-			return;
-		}
-
-		canvas.removeEventListener('pointerdown', this.handlePointerDown);
-		canvas.removeEventListener('pointermove', this.handlePointerMove);
-		canvas.removeEventListener('pointerup', this.handlePointerUp);
-		canvas.removeEventListener('pointercancel', this.handlePointerCancel);
-		canvas.removeEventListener('pointerleave', this.handlePointerCancel);
-		canvas.removeEventListener('contextmenu', (e) => {
-			e.preventDefault();
-		});
 	}
 
 	/**
@@ -196,50 +242,27 @@ export class IndexElement extends HTMLElement {
 		e.target.setPointerCapture(e.pointerId);
 
 		const point = this.getPointFromEvent(e);
-		console.debug(
-			'🎮 IndexElement handlePointerDown',
-			{
-				tool: this.currentTool,
-				point,
-				button: e.button,
-			},
-			'🎯',
-		);
+		console.debug('🎮 IndexElement handlePointerDown', { tool: this.currentTool, point }, '🎯');
 
-		// Handle tool-specific behavior
 		switch (this.currentTool) {
 			case 'spawn':
-				// Check if we hit an existing body first
-				{
-					const body = this.physics.getBodyAtPoint(point);
-					if (body) {
-						// Start dragging existing body
-						this.startDraggingBody(body, point);
-					} else {
-						// Spawn a new object
-						this.spawnObjectAtPoint(point);
-					}
-				}
+				this.handleSpawnTool(point);
 				break;
-
-			case 'destroy': {
-				// Find and destroy body at point
-				const bodyToDestroy = this.physics.getBodyAtPoint(point);
-				if (bodyToDestroy) {
-					this.physics.destroyBody(bodyToDestroy);
-					this.updateStats(); // Update stats immediately
-				}
+			case 'draw':
+				this.handleDrawToolStart(point);
 				break;
-			}
-
-			case 'circle':
-			case 'box':
-			case 'polygon':
-			case 'line':
-				// Start drawing the shape
-				this.isDrawing = true;
-				this.drawStartPoint = point;
+			case 'drag':
+				this.handleDragToolStart(point);
 				break;
+			case 'explode':
+				this.handleExplodeTool(point);
+				break;
+			case 'erase':
+				this.handleEraseTool(point);
+				break;
+			default:
+				// Default to spawn behavior
+				this.handleSpawnTool(point);
 		}
 
 		// Prevent default behavior
@@ -252,90 +275,229 @@ export class IndexElement extends HTMLElement {
 	handlePointerMove(e) {
 		const point = this.getPointFromEvent(e);
 
+		switch (this.currentTool) {
+			case 'spawn':
+				this.handleSpawnToolMove(point);
+				break;
+			case 'draw':
+				this.handleDrawToolMove(point);
+				break;
+			case 'drag':
+				this.handleDragToolMove(point);
+				break;
+			case 'explode':
+			case 'erase':
+				// These tools don't need special move handling
+				break;
+			default:
+				this.handleSpawnToolMove(point);
+		}
+
+		e.preventDefault();
+	}
+
+	/**
+	 * Handle pointer up event
+	 */
+	handlePointerUp(e) {
+		// Release the pointer capture
+		if (e.target.hasPointerCapture(e.pointerId)) {
+			e.target.releasePointerCapture(e.pointerId);
+		}
+
+		const point = this.getPointFromEvent(e);
+
+		switch (this.currentTool) {
+			case 'draw':
+				this.handleDrawToolEnd(point);
+				break;
+			case 'drag':
+				this.stopDragging();
+				break;
+			default:
+				// No special handling needed for other tools
+				break;
+		}
+
+		e.preventDefault();
+	}
+
+	/**
+	 * Handle pointer cancel event
+	 */
+	handlePointerCancel(e) {
+		// Release the pointer capture
+		if (e.target.hasPointerCapture(e.pointerId)) {
+			e.target.releasePointerCapture(e.pointerId);
+		}
+
+		if (this.isDrawing) {
+			this.clearPreview();
+			this.isDrawing = false;
+		}
+
+		this.stopDragging();
+		e.preventDefault();
+	}
+
+	/**
+	 * Handle spawn tool
+	 */
+	handleSpawnTool(point) {
+		const body = this.physics.getBodyAtPoint(point);
+		if (body) {
+			// When clicking on a body with spawn tool, start dragging
+			this.startDraggingBody(body, point);
+		} else {
+			// Otherwise spawn a new object
+			this.spawnObjectAtPoint(point);
+		}
+	}
+
+	/**
+	 * Handle spawn tool during move
+	 */
+	handleSpawnToolMove(point) {
 		if (this.isDragging && this.dragBody) {
 			// Move existing body
 			this.moveBodyToPoint(point);
-			// Prevent default behavior like scrolling
-			e.preventDefault();
-		} else if (this.isDrawing) {
-			// Update shape preview
-			this.updateShapePreview(point);
-			e.preventDefault();
-		} else if (this.currentTool === 'spawn' && this.canSpawn()) {
-			// Spawn objects while moving on empty space when using the spawn tool
+		} else if (this.canSpawn()) {
+			// Spawn objects while moving on empty space
 			const body = this.physics.getBodyAtPoint(point);
 			if (!body) {
 				this.spawnObjectAtPoint(point);
-			}
-		} else if (this.currentTool === 'destroy') {
-			// Continuously destroy bodies when destroy tool is active and moving
-			const bodyToDestroy = this.physics.getBodyAtPoint(point);
-			if (bodyToDestroy) {
-				this.physics.destroyBody(bodyToDestroy);
-				this.updateStats(); // Update stats immediately
-				e.preventDefault();
 			}
 		}
 	}
 
 	/**
-	 * Update the preview of the shape being drawn
+	 * Handle draw tool start
 	 */
-	updateShapePreview(currentPoint) {
-		if (!this.drawStartPoint || !this.previewCtx) {
-			return;
-		}
+	handleDrawToolStart(point) {
+		this.isDrawing = true;
+		this.drawStartPoint = point;
 
-		const ctx = this.previewCtx;
-		const previewCanvas = ctx.canvas;
+		// Set random draw shape
+		const shapes = ['circle', 'box', 'polygon', 'line'];
+		this.drawShape = shapes[Math.floor(Math.random() * shapes.length)];
+	}
+
+	/**
+	 * Handle draw tool during move
+	 */
+	handleDrawToolMove(point) {
+		if (!this.isDrawing) {return;}
 
 		// Clear previous preview
-		ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+		this.clearPreview();
 
-		// Get shape preview data
+		// Generate preview shape
 		const preview = this.physics.createShapePreview(
-			this.currentTool,
+			this.drawShape,
 			this.drawStartPoint,
-			currentPoint,
+			point
 		);
 
-		if (!preview) {
-			return;
+		// Draw preview
+		if (preview) {
+			this.drawPreview(preview);
+		}
+	}
+
+	/**
+	 * Handle draw tool end
+	 */
+	handleDrawToolEnd(point) {
+		if (!this.isDrawing) {return;}
+
+		// Create actual physics body based on shape
+		switch (this.drawShape) {
+			case 'circle':
+				this.physics.createCircle(this.drawStartPoint, point);
+				break;
+			case 'box':
+				this.physics.createBox(this.drawStartPoint, point);
+				break;
+			case 'polygon':
+				this.physics.createPolygon(this.drawStartPoint, point);
+				break;
+			case 'line':
+				this.physics.createLine(this.drawStartPoint, point);
+				break;
 		}
 
-		// Draw preview based on type
+		// Clear preview and reset state
+		this.clearPreview();
+		this.isDrawing = false;
+		this.drawStartPoint = null;
+	}
+
+	/**
+	 * Handle drag tool start
+	 */
+	handleDragToolStart(point) {
+		const body = this.physics.getBodyAtPoint(point);
+		if (body) {
+			this.startDraggingBody(body, point);
+		}
+	}
+
+	/**
+	 * Handle drag tool during move
+	 */
+	handleDragToolMove(point) {
+		if (this.isDragging && this.dragBody) {
+			this.moveBodyToPoint(point);
+		}
+	}
+
+	/**
+	 * Handle explode tool
+	 */
+	handleExplodeTool(point) {
+		this.physics.applyExplosionForce(point, 0.01, 150);
+	}
+
+	/**
+	 * Handle erase tool
+	 */
+	handleEraseTool(point) {
+		const body = this.physics.getBodyAtPoint(point);
+		if (body) {
+			this.physics.destroyBody(body);
+		}
+	}
+
+	/**
+	 * Draw shape preview
+	 */
+	drawPreview(preview) {
+		if (!this.previewCtx) {return;}
+
+		const ctx = this.previewCtx;
 		ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
-		ctx.fillStyle = 'rgba(58, 134, 255, 0.5)';
 		ctx.lineWidth = 2;
 
 		switch (preview.type) {
 			case 'circle':
 				ctx.beginPath();
 				ctx.arc(preview.x, preview.y, preview.radius, 0, Math.PI * 2);
-				ctx.fill();
 				ctx.stroke();
 				break;
 
 			case 'box':
-				ctx.beginPath();
-				ctx.rect(preview.x, preview.y, preview.width, preview.height);
-				ctx.fill();
-				ctx.stroke();
+				ctx.strokeRect(preview.x, preview.y, preview.width, preview.height);
 				break;
 
 			case 'polygon':
-				ctx.beginPath();
-				{
-					const { vertices } = preview;
-					if (vertices && vertices.length > 0) {
-						ctx.moveTo(vertices[0].x, vertices[0].y);
-						for (let i = 1; i < vertices.length; i++) {
-							ctx.lineTo(vertices[i].x, vertices[i].y);
-						}
-						ctx.closePath();
-						ctx.fill();
-						ctx.stroke();
+				if (preview.vertices && preview.vertices.length) {
+					ctx.beginPath();
+					ctx.moveTo(preview.vertices[0].x, preview.vertices[0].y);
+					for (let i = 1; i < preview.vertices.length; i++) {
+						ctx.lineTo(preview.vertices[i].x, preview.vertices[i].y);
 					}
+					ctx.closePath();
+					ctx.stroke();
 				}
 				break;
 
@@ -343,10 +505,31 @@ export class IndexElement extends HTMLElement {
 				ctx.beginPath();
 				ctx.moveTo(preview.x1, preview.y1);
 				ctx.lineTo(preview.x2, preview.y2);
-				ctx.lineWidth = preview.thickness;
 				ctx.stroke();
 				break;
 		}
+	}
+
+	/**
+	 * Clear preview canvas
+	 */
+	clearPreview() {
+		if (this.previewCtx) {
+			const {canvas} = this.previewCtx;
+			this.previewCtx.clearRect(0, 0, canvas.width, canvas.height);
+		}
+	}
+
+	/**
+	 * Get pointer coordinates relative to canvas
+	 */
+	getPointFromEvent(e) {
+		const canvas = this.shadowRoot.querySelector('#physics-canvas');
+		const rect = canvas.getBoundingClientRect();
+		return {
+			x: e.clientX - rect.left,
+			y: e.clientY - rect.top,
+		};
 	}
 
 	/**
@@ -388,7 +571,7 @@ export class IndexElement extends HTMLElement {
 				'🎮 IndexElement spawnObjectAtPoint',
 				{
 					point,
-					timeSinceLastSpawn: Date.now() - this.lastSpawnTime,
+					timeSinceLastSpawn: now - this.lastSpawnTime,
 				},
 				'🎯',
 			);
@@ -405,118 +588,6 @@ export class IndexElement extends HTMLElement {
 	}
 
 	/**
-	 * Handle pointer up event
-	 */
-	handlePointerUp(e) {
-		// Release the pointer capture
-		if (e.target.hasPointerCapture(e.pointerId)) {
-			e.target.releasePointerCapture(e.pointerId);
-		}
-
-		const point = this.getPointFromEvent(e);
-
-		if (this.isDrawing) {
-			// Finish creating the shape
-			this.finishShapeDrawing(point);
-		}
-
-		this.stopDragging();
-		e.preventDefault();
-	}
-
-	/**
-	 * Finish drawing a shape and create the actual physics body
-	 */
-	finishShapeDrawing(endPoint) {
-		if (!this.drawStartPoint) {
-			return;
-		}
-
-		// Clear the preview
-		if (this.previewCtx) {
-			const { canvas } = this.previewCtx;
-			this.previewCtx.clearRect(0, 0, canvas.width, canvas.height);
-		}
-
-		// Calculate minimum distance for shape creation
-		const dx = endPoint.x - this.drawStartPoint.x;
-		const dy = endPoint.y - this.drawStartPoint.y;
-		const distance = Math.sqrt(dx * dx + dy * dy);
-
-		// Only create shapes if they're big enough
-		if (distance >= config.objects.minSize / 2) {
-			switch (this.currentTool) {
-				case 'circle':
-					this.physics.createCircle(this.drawStartPoint, endPoint);
-					break;
-
-				case 'box':
-					this.physics.createBox(this.drawStartPoint, endPoint);
-					break;
-
-				case 'polygon':
-					this.physics.createPolygon(this.drawStartPoint, endPoint);
-					break;
-
-				case 'line':
-					this.physics.createLine(this.drawStartPoint, endPoint);
-					break;
-			}
-		}
-
-		console.debug(
-			'🎮 IndexElement finishShapeDrawing',
-			{
-				tool: this.currentTool,
-				start: this.drawStartPoint,
-				end: endPoint,
-				distance: Math.sqrt(
-					Math.pow(endPoint.x - this.drawStartPoint.x, 2) +
-						Math.pow(endPoint.y - this.drawStartPoint.y, 2),
-				),
-			},
-			'🎯',
-		);
-
-		// Reset drawing state
-		this.isDrawing = false;
-		this.drawStartPoint = null;
-	}
-
-	/**
-	 * Handle pointer cancel event
-	 */
-	handlePointerCancel(e) {
-		// Release the pointer capture
-		if (e.target.hasPointerCapture(e.pointerId)) {
-			e.target.releasePointerCapture(e.pointerId);
-		}
-
-		// Clear any drawing in progress
-		if (this.isDrawing && this.previewCtx) {
-			const { canvas } = this.previewCtx;
-			this.previewCtx.clearRect(0, 0, canvas.width, canvas.height);
-			this.isDrawing = false;
-			this.drawStartPoint = null;
-		}
-
-		this.stopDragging();
-		e.preventDefault();
-	}
-
-	/**
-	 * Get pointer coordinates relative to canvas
-	 */
-	getPointFromEvent(e) {
-		const canvas = this.shadowRoot.querySelector('#physics-canvas');
-		const rect = canvas.getBoundingClientRect();
-		return {
-			x: e.clientX - rect.left,
-			y: e.clientY - rect.top,
-		};
-	}
-
-	/**
 	 * Move the currently dragged body to a new point
 	 */
 	moveBodyToPoint(point) {
@@ -524,21 +595,6 @@ export class IndexElement extends HTMLElement {
 			x: this.dragBody.position.x + (point.x - this.startPoint.x),
 			y: this.dragBody.position.y + (point.y - this.startPoint.y),
 		});
-
-		console.debug(
-			'🎮 IndexElement moveBodyToPoint',
-			{
-				delta: {
-					x: point.x - this.startPoint.x,
-					y: point.y - this.startPoint.y,
-				},
-				newPosition: {
-					x: this.dragBody.position.x,
-					y: this.dragBody.position.y,
-				},
-			},
-			'🎯',
-		);
 
 		this.startPoint = point;
 	}
@@ -594,5 +650,21 @@ export class IndexElement extends HTMLElement {
 			this.resizeObserver.disconnect();
 			this.resizeObserver = null;
 		}
+	}
+
+	removeEventListeners() {
+		const canvas = this.shadowRoot.querySelector('#physics-canvas');
+		if (!canvas) {
+			return;
+		}
+
+		canvas.removeEventListener('pointerdown', this.handlePointerDown);
+		canvas.removeEventListener('pointermove', this.handlePointerMove);
+		canvas.removeEventListener('pointerup', this.handlePointerUp);
+		canvas.removeEventListener('pointercancel', this.handlePointerCancel);
+		canvas.removeEventListener('pointerleave', this.handlePointerCancel);
+		canvas.removeEventListener('contextmenu', (e) => {
+			e.preventDefault();
+		});
 	}
 }

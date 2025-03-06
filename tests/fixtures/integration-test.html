@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Integration Tests</title>
+	<style>
+		body {
+			background-color: #121212;
+			color: white;
+			font-family: sans-serif;
+			margin: 0;
+			padding: 20px;
+			height: 100vh;
+			display: flex;
+			flex-direction: column;
+		}
+
+		.test-container {
+			flex: 1;
+			position: relative;
+			border: 1px solid #444;
+			border-radius: 8px;
+			overflow: hidden;
+			margin-bottom: 20px;
+		}
+
+		.controls {
+			display: flex;
+			gap: 10px;
+			padding: 10px;
+			background: rgba(0, 0, 0, 0.4);
+		}
+
+		button {
+			padding: 8px 15px;
+			background-color: #3a86ff;
+			color: white;
+			border: none;
+			border-radius: 4px;
+			cursor: pointer;
+		}
+
+		button:hover {
+			background-color: #2a76ef;
+		}
+
+		.logs {
+			margin-top: 10px;
+			padding: 10px;
+			background: rgba(0, 0, 0, 0.2);
+			border-radius: 4px;
+			font-family: monospace;
+			height: 150px;
+			overflow-y: auto;
+		}
+
+		.log-entry {
+			margin-bottom: 4px;
+			border-bottom: 1px solid #333;
+			padding-bottom: 4px;
+		}
+
+		.success {
+			color: #4caf50;
+		}
+
+		.error {
+			color: #f44336;
+		}
+	</style>
+</head>
+
+<body>
+	<h1>Integration Test Fixture</h1>
+
+	<div class="test-container">
+		<te-index id="test-component"></te-index>
+	</div>
+
+	<div class="controls">
+		<button id="run-all-tests">Run All Tests</button>
+		<button id="test-draw">Test Draw Tool</button>
+		<button id="test-explode">Test Explosion</button>
+		<button id="test-erase">Test Erase</button>
+		<button id="test-drag">Test Drag</button>
+		<button id="clear">Clear Objects</button>
+	</div>
+
+	<div class="logs" id="test-logs">
+		<div class="log-entry">Integration test fixture loaded. Click a test button to start.</div>
+	</div>
+
+	<script type="module">
+		import {IndexElement} from '../../www/js/index-element.js';
+
+		// Register the component
+		if(!customElements.get('te-index')) {
+			customElements.define('te-index',IndexElement);
+		}
+
+		const component=document.getElementById('test-component');
+		const logs=document.getElementById('test-logs');
+
+		// Helper for logging test results
+		function log(message,isSuccess=true) {
+			const entry=document.createElement('div');
+			entry.classList.add('log-entry');
+			if(isSuccess) {
+				entry.classList.add('success');
+			} else {
+				entry.classList.add('error');
+			}
+			entry.textContent=message;
+			logs.appendChild(entry);
+			logs.scrollTop=logs.scrollHeight;
+		}
+
+		// Wait for component to initialize
+		setTimeout(() => {
+			// Test functions
+			window.tests={
+				drawTool: async () => {
+					try {
+						// Switch to draw tool
+						component.handleToolChange('draw');
+						log('Selected draw tool');
+
+						// Begin tracking changes
+						const initialCount=component.physics.bodies.dynamic.length;
+						log(`Initial bodies count: ${initialCount}`);
+
+						// Simulate drawing action
+						const canvas=component.shadowRoot.querySelector('#physics-canvas');
+						const rect=canvas.getBoundingClientRect();
+						const startX=rect.left+100;
+						const startY=rect.top+100;
+						const endX=rect.left+200;
+						const endY=rect.top+100;
+
+						// Start drawing
+						component.handleDrawToolStart({x: 100,y: 100});
+						log('Started drawing at (100, 100)');
+
+						// Move to complete shape
+						component.handleDrawToolMove({x: 200,y: 100});
+						log('Moved to (200, 100)');
+
+						// End drawing to create shape
+						component.handleDrawToolEnd({x: 200,y: 100});
+						log('Ended drawing, shape created');
+
+						// Check final count
+						const finalCount=component.physics.bodies.dynamic.length;
+						log(`Final bodies count: ${finalCount}`);
+
+						// Verify shape was created
+						if(finalCount>initialCount) {
+							log('✅ TEST PASSED: Draw tool created new physics body');
+						} else {
+							log('❌ TEST FAILED: Draw tool did not create new physics body',false);
+						}
+					} catch(error) {
+						log(`❌ TEST ERROR: ${error.message}`,false);
+					}
+				},
+
+				explodeTool: async () => {
+					try {
+						// First create some objects
+						component.handleToolChange('spawn');
+						log('Creating objects for explosion test');
+
+						const center={x: 200,y: 200};
+
+						// Create a grid of objects
+						for(let i=0;i<5;i++) {
+							for(let j=0;j<5;j++) {
+								component.spawnObjectAtPoint({
+									x: center.x-50+i*25,
+									y: center.y-50+j*25
+								});
+							}
+						}
+
+						log(`Created ${5*5} objects`);
+
+						// Save initial positions
+						const initialPositions=component.physics.bodies.dynamic
+							.map(body => ({
+								id: body.id,
+								x: body.position.x,
+								y: body.position.y
+							}));
+
+						// Switch to explode tool
+						component.handleToolChange('explode');
+						log('Selected explode tool');
+
+						// Trigger explosion
+						component.handleExplodeTool(center);
+						log(`Triggered explosion at (${center.x}, ${center.y})`);
+
+						// Wait for physics to update
+						await new Promise(resolve => setTimeout(resolve,300));
+
+						// Check if positions changed
+						const positionsChanged=component.physics.bodies.dynamic.some(body => {
+							const initial=initialPositions.find(p => p.id===body.id);
+							if(!initial) return false;
+
+							const dx=body.position.x-initial.x;
+							const dy=body.position.y-initial.y;
+							const distance=Math.sqrt(dx*dx+dy*dy);
+
+							return distance>0.1; // Position changed by at least 0.1 units
+						});
+
+						if(positionsChanged) {
+							log('✅ TEST PASSED: Explosion moved bodies');
+						} else {
+							log('❌ TEST FAILED: Explosion did not move bodies',false);
+						}
+					} catch(error) {
+						log(`❌ TEST ERROR: ${error.message}`,false);
+					}
+				},
+
+				eraseTool: async () => {
+					try {
+						// Create an object to erase
+						component.handleToolChange('spawn');
+						const eraseTarget={x: 150,y: 250};
+						component.spawnObjectAtPoint(eraseTarget);
+						log(`Created object at (${eraseTarget.x}, ${eraseTarget.y})`);
+
+						// Wait for physics to update
+						await new Promise(resolve => setTimeout(resolve,100));
+
+						// Count bodies before
+						const initialCount=component.physics.bodies.dynamic.length;
+						log(`Initial bodies count: ${initialCount}`);
+
+						// Switch to erase tool
+						component.handleToolChange('erase');
+						log('Selected erase tool');
+
+						// Use erase tool at object position
+						component.handleEraseTool(eraseTarget);
+						log(`Used erase tool at (${eraseTarget.x}, ${eraseTarget.y})`);
+
+						// Wait for physics to update
+						await new Promise(resolve => setTimeout(resolve,100));
+
+						// Count bodies after
+						const finalCount=component.physics.bodies.dynamic.length;
+						log(`Final bodies count: ${finalCount}`);
+
+						if(finalCount<initialCount) {
+							log('✅ TEST PASSED: Erase tool removed body');
+						} else {
+							log('❌ TEST FAILED: Erase tool did not remove body',false);
+						}
+					} catch(error) {
+						log(`❌ TEST ERROR: ${error.message}`,false);
+					}
+				},
+
+				dragTool: async () => {
+					try {
+						// Create an object to drag
+						component.handleToolChange('spawn');
+						const dragTarget={x: 250,y: 250};
+						component.spawnObjectAtPoint(dragTarget);
+						log(`Created object at (${dragTarget.x}, ${dragTarget.y})`);
+
+						// Wait for physics to update
+						await new Promise(resolve => setTimeout(resolve,100));
+
+						// Get the body we created
+						let body=null;
+						for(const b of component.physics.bodies.dynamic) {
+							const dx=b.position.x-dragTarget.x;
+							const dy=b.position.y-dragTarget.y;
+							const distance=Math.sqrt(dx*dx+dy*dy);
+
+							if(distance<20) {
+								body=b;
+								break;
+							}
+						}
+
+						if(!body) {
+							log('❌ TEST FAILED: Could not find body to drag',false);
+							return;
+						}
+
+						// Record initial position
+						const initialPosition={x: body.position.x,y: body.position.y};
+						log(`Initial position: (${initialPosition.x.toFixed(1)}, ${initialPosition.y.toFixed(1)})`);
+
+						// Switch to drag tool
+						component.handleToolChange('drag');
+						log('Selected drag tool');
+
+						// Start dragging
+						component.handleDragToolStart(dragTarget);
+						log('Started drag');
+
+						// Move to new position
+						const newTarget={x: dragTarget.x+50,y: dragTarget.y-30};
+						component.handleDragToolMove(newTarget);
+						log(`Dragged to (${newTarget.x}, ${newTarget.y})`);
+
+						// Stop dragging
+						component.stopDragging();
+						log('Ended drag');
+
+						// Check if position changed
+						const finalPosition={x: body.position.x,y: body.position.y};
+						log(`Final position: (${finalPosition.x.toFixed(1)}, ${finalPosition.y.toFixed(1)})`);
+
+						const dx=finalPosition.x-initialPosition.x;
+						const dy=finalPosition.y-initialPosition.y;
+						const distance=Math.sqrt(dx*dx+dy*dy);
+
+						if(distance>10) {
+							log(`✅ TEST PASSED: Drag moved body by ${distance.toFixed(1)} units`);
+						} else {
+							log('❌ TEST FAILED: Drag did not move body enough',false);
+						}
+					} catch(error) {
+						log(`❌ TEST ERROR: ${error.message}`,false);
+					}
+				},
+
+				clearObjects: () => {
+					try {
+						// Remove all dynamic bodies
+						const physics=component.physics;
+
+						if(!physics||!physics.bodies||!physics.bodies.dynamic) {
+							log('❌ Physics engine not properly initialized',false);
+							return;
+						}
+
+						// Clone array to avoid modification during iteration
+						const bodies=[...physics.bodies.dynamic];
+
+						for(const body of bodies) {
+							physics.destroyBody(body);
+						}
+
+						log(`Cleared ${bodies.length} objects`);
+					} catch(error) {
+						log(`❌ Error clearing objects: ${error.message}`,false);
+					}
+				},
+
+				runAllTests: async () => {
+					log("===== RUNNING ALL TESTS =====");
+					await window.tests.clearObjects();
+					await window.tests.drawTool();
+					await new Promise(resolve => setTimeout(resolve,500));
+
+					await window.tests.clearObjects();
+					await window.tests.explodeTool();
+					await new Promise(resolve => setTimeout(resolve,500));
+
+					await window.tests.clearObjects();
+					await window.tests.eraseTool();
+					await new Promise(resolve => setTimeout(resolve,500));
+
+					await window.tests.clearObjects();
+					await window.tests.dragTool();
+					log("===== ALL TESTS COMPLETE =====");
+				}
+			};
+
+			// Add event listeners to test buttons
+			document.getElementById('test-draw').addEventListener('click',window.tests.drawTool);
+			document.getElementById('test-explode').addEventListener('click',window.tests.explodeTool);
+			document.getElementById('test-erase').addEventListener('click',window.tests.eraseTool);
+			document.getElementById('test-drag').addEventListener('click',window.tests.dragTool);
+			document.getElementById('clear').addEventListener('click',window.tests.clearObjects);
+			document.getElementById('run-all-tests').addEventListener('click',window.tests.runAllTests);
+
+			log('Test fixture ready.');
+		},1000);
+	</script>
+</body>
+
+</html>

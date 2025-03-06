@@ -4,7 +4,7 @@
 export const config = {
 	// Physics settings
 	physics: {
-		gravity: { x: 0, y: 1, scale: 0.001 },
+		gravity: { x: 0, y: 0, scale: 0.001 },
 		friction: 0.1,
 		restitution: 0.7,
 		enableSleeping: false, // Changed to false to keep bodies active
@@ -32,14 +32,5 @@ export const config = {
 		maxSize: 50,
 		types: ['circle', 'box', 'polygon'],
 		typeWeights: [2, 2, 1], // Weighted probabilities
-	},
-
-	// Tool settings
-	tools: {
-		defaultTool: 'spawn',
-		constraints: {
-			maxLineLength: 500,
-			maxShapeSize: 150,
-		},
-	},
+	}
 };

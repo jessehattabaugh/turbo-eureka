@@ -41,6 +41,7 @@ The project uses Playwright for end-to-end testing and visual regression testing
 1. **End-to-end tests**: Verify that the application loads successfully and the Matter.js canvas renders correctly
 2. **Component tests**: Test individual web components in isolation using test fixtures
 3. **Visual regression tests**: Compare screenshots to detect unintended visual changes
+4. **Integration tests**: Test the interaction between components and the physics engine
 
 ### Installing Test Dependencies
 
@@ -100,8 +101,9 @@ node -e "require('./tests/utils/visual-regression').updateBaseline('main-page')"
 
 Component tests use HTML fixtures to test components in isolation:
 
-- `tests/fixtures/tool-dock.html`: Tests the ToolDock component
+- `tests/fixtures/index-element.html`: Tests the IndexElement component
 - `tests/fixtures/physics-engine.html`: Tests the PhysicsEngine component
+- `tests/fixtures/integration-test.html`: Tests the full component integration
 
 To run the fixture server manually:
 
@@ -113,42 +115,38 @@ Then visit `http://localhost:3001/[fixture-name].html` in your browser.
 
 ### Maintaining Tests
 
-#### Adding a New Test
+#### Test Organization
 
-1. Create a new test file in `tests/e2e/` or `tests/modules/`
-2. Import the visual regression helper:
+Our tests are organized by type and purpose:
 
-```javascript
-import { takeScreenshotAndCompare } from '../utils/visual-regression.js';
-```
+- `tests/e2e/`: End-to-end tests for the full application
+  - `page-load.spec.js`: Basic page loading tests
+  - `user-interactions.spec.js`: Tests for user interactions with the application
 
-3. Use Playwright's testing API along with the visual regression helper:
+- `tests/modules/`: Unit tests for individual components
+  - `index-element.spec.js`: Tests for the IndexElement component
+  - `physics-engine.spec.js`: Tests for the PhysicsEngine component
 
-```javascript
-test('my test description', async ({ page }) => {
-  await page.goto('/');
+- `tests/integration/`: Integration tests for component combinations
+  - `tool-interactions.spec.js`: Tests how tools interact with the physics engine
 
-  // Test actions...
+- `tests/utils/`: Test utilities
+  - `visual-regression.js`: Visual regression testing helpers
 
-  // Take and compare screenshots
-  await takeScreenshotAndCompare(page, 'my-test-screenshot');
-});
-```
+#### Adding New Tests
 
-#### Adding a New Fixture
+1. **For End-to-End Tests**: Add to the appropriate file in `tests/e2e/`
+2. **For Component Tests**: Add to the appropriate file in `tests/modules/`
+3. **For Integration Tests**: Add to the appropriate file in `tests/integration/`
 
-To test a component in isolation:
+#### Test Patterns
 
-1. Create a new HTML file in `tests/fixtures/`
-2. Import the component and its dependencies
-3. Create the necessary DOM structure
-4. Add any test helpers or controls
+When writing tests, follow these patterns:
 
-#### Common Test Maintenance Tasks
-
-- **Update baselines**: After intentional UI changes, update the baseline screenshots
-- **Adjust thresholds**: If visual differences are acceptable, adjust the threshold in the visual regression helper
-- **Add test coverage**: Add new tests when adding new features
+1. **Isolation**: Component tests should test components in isolation
+2. **Integration**: Integration tests should test how components work together
+3. **User perspective**: E2E tests should simulate real user interactions
+4. **Visual verification**: Use visual regression for UI changes
 
 ## Deployment
 
@@ -159,3 +157,7 @@ npm run deploy:prod
 # Build and deploy to staging
 npm run deploy:staging
 ```
+
+You can view the live application at:
+- Production: [https://turbo-eureka.surge.sh](https://turbo-eureka.surge.sh)
+- Staging: [https://staging-turbo-eureka.surge.sh](https://staging-turbo-eureka.surge.sh)

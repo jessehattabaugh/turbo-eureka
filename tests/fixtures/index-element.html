@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>IndexElement Tests</title>
+	<style>
+		body {
+			background-color: #121212;
+			color: white;
+			font-family: sans-serif;
+			margin: 0;
+			padding: 20px;
+			height: 100vh;
+			display: flex;
+			flex-direction: column;
+		}
+
+		#test-container {
+			width: 100%;
+			height: 80vh;
+			position: relative;
+		}
+
+		#test-index-element {
+			width: 100%;
+			height: 100%;
+			display: block;
+		}
+
+		#test-controls {
+			margin-top: 20px;
+			display: flex;
+			gap: 10px;
+		}
+
+		button {
+			padding: 8px 15px;
+			background-color: #3a86ff;
+			color: white;
+			border: none;
+			border-radius: 4px;
+			cursor: pointer;
+		}
+
+		button:hover {
+			background-color: #2a76ef;
+		}
+	</style>
+</head>
+
+<body>
+	<h1>IndexElement Test</h1>
+
+	<div id="test-container">
+		<te-index id="test-index-element"></te-index>
+	</div>
+
+	<div id="test-controls">
+		<button id="spawn-tool">Spawn Tool</button>
+		<button id="draw-tool">Draw Tool</button>
+		<button id="drag-tool">Drag Tool</button>
+		<button id="explode-tool">Explode Tool</button>
+		<button id="erase-tool">Erase Tool</button>
+	</div>
+
+	<script type="module">
+		import {IndexElement} from '../../www/js/index-element.js';
+
+		// Register the component
+		if(!customElements.get('te-index')) {
+			customElements.define('te-index',IndexElement);
+		}
+
+		// Set up tool buttons
+		document.querySelectorAll('#test-controls button').forEach(button => {
+			button.addEventListener('click',() => {
+				const toolName=button.id.split('-')[0];
+				const element=document.getElementById('test-index-element');
+				element.handleToolChange(toolName);
+				console.log(`Changed to ${toolName} tool`);
+			});
+		});
+
+		// Make the element accessible for testing
+		const element=document.getElementById('test-index-element');
+		window.testElement=element;
+
+		// Log initialization
+		console.log('IndexElement test fixture initialized');
+	</script>
+</body>
+
+</html>
